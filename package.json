@@ -4,6 +4,7 @@
   "description": "DEFIS Browser - Antidetect Solution (Beta)",
   "scripts": {
     "install:all": "npm install --prefix page && npm install --prefix page/defis-server",
+    "db:init": "npm run db:init --prefix page/defis-server",
     "start:client": "npm start --prefix page",
     "start:server": "npm start --prefix page/defis-server",
     "dev:server": "npm run dev --prefix page/defis-server",
