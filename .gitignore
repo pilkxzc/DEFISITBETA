@@ -67,3 +67,4 @@ logs/
 .claude/
 .dmux/
 .worktrees/task/test/
+page/defis-server/releases/*.pacman
