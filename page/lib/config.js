@@ -244,29 +244,79 @@ function registerConfigIPC(ipcMain) {
                     }
 
                 } else if (isPacman) {
-                    // ── .pacman package: pkexec pacman -U ─────────────────
+                    // ── .pacman: pkexec → terminal emulator → manual ──────
                     const manualCmd = `sudo pacman -U --noconfirm "${destPath}"`;
                     bcast('waiting-auth');
-                    setTimeout(() => {
-                        execFile('pkexec', ['pacman', '-U', '--noconfirm', destPath],
-                            { timeout: 120_000 },
-                            (err) => {
-                                if (!err) {
-                                    bcast('done');
-                                    setTimeout(() => { app.relaunch(); app.exit(0); }, 1500);
-                                } else {
-                                    clipboard.writeText(manualCmd);
-                                    bcast('manual', { path: destPath });
-                                    dialog.showMessageBox({
-                                        type:    'info',
-                                        title:   'Встановіть оновлення вручну',
-                                        message: 'Команда скопійована в буфер обміну',
-                                        detail:  `Відкрийте термінал і вставте:\n\n${manualCmd}`,
-                                        buttons: ['OK'],
-                                    }).catch(() => {});
-                                }
-                            }
-                        );
+
+                    const doInstall = async () => {
+                        // 1) Try pkexec (works when a polkit agent is running)
+                        const pkexecOk = await new Promise(resolve => {
+                            execFile('pkexec', ['pacman', '-U', '--noconfirm', destPath],
+                                { timeout: 120_000 },
+                                err => resolve(!err));
+                        });
+                        if (pkexecOk) return true;
+
+                        // 2) Fall back: open a terminal emulator with sudo
+                        bcast('waiting-auth');
+                        const donePath   = pathMod.join(os.tmpdir(), '.defis-update-rc');
+                        const scriptPath = pathMod.join(os.tmpdir(), '.defis-updater.sh');
+                        try { fs.unlinkSync(donePath); } catch {}
+                        fs.writeFileSync(scriptPath, [
+                            '#!/bin/bash',
+                            'echo "=== DEFIS Browser Update ==="',
+                            `sudo pacman -U --noconfirm "${destPath}"`,
+                            `echo $? > "${donePath}"`,
+                            'echo ""',
+                            'echo "=== Натисніть Enter для закриття ==="',
+                            'read',
+                        ].join('\n'), { mode: 0o755 });
+
+                        const { spawn } = require('child_process');
+                        const terminals = [
+                            ['xterm',          ['-title', 'DEFIS Update', '-e', `bash "${scriptPath}"`]],
+                            ['alacritty',      ['-T', 'DEFIS Update', '-e', 'bash', scriptPath]],
+                            ['kitty',          ['bash', scriptPath]],
+                            ['konsole',        ['--noclose', '-e', 'bash', scriptPath]],
+                            ['gnome-terminal', ['--wait', '--', 'bash', scriptPath]],
+                            ['xfce4-terminal', ['--', 'bash', scriptPath]],
+                            ['foot',           ['bash', scriptPath]],
+                            ['wezterm',        ['start', '--', 'bash', scriptPath]],
+                        ];
+
+                        for (const [bin, args] of terminals) {
+                            const result = await new Promise(resolve => {
+                                const child = spawn(bin, args, { detached: false });
+                                child.on('error', () => resolve(null)); // binary not found
+                                child.on('close', () => {
+                                    try {
+                                        const rc = parseInt(fs.readFileSync(donePath, 'utf8').trim());
+                                        resolve(rc === 0);
+                                    } catch { resolve(false); }
+                                });
+                            });
+                            if (result === null) continue; // try next terminal
+                            return result;
+                        }
+                        return false;
+                    };
+
+                    setTimeout(async () => {
+                        const ok = await doInstall();
+                        if (ok) {
+                            bcast('done');
+                            setTimeout(() => { app.relaunch(); app.exit(0); }, 1500);
+                        } else {
+                            clipboard.writeText(manualCmd);
+                            bcast('manual', { path: destPath });
+                            dialog.showMessageBox({
+                                type:    'info',
+                                title:   'Встановіть оновлення вручну',
+                                message: 'Команда скопійована в буфер обміну',
+                                detail:  `Відкрийте термінал і вставте:\n\n${manualCmd}`,
+                                buttons: ['OK'],
+                            }).catch(() => {});
+                        }
                     }, 200);
 
                 } else {

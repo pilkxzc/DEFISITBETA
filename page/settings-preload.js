@@ -45,4 +45,5 @@ contextBridge.exposeInMainWorld('settingsApi', {
     openDownloadUrl:     (url)            => ipcRenderer.send('open-download-url', url),
     onUploadProgress:    (cb)             => ipcRenderer.on('upload-progress', (_e, d) => cb(d)),
     offUploadProgress:   ()               => ipcRenderer.removeAllListeners('upload-progress'),
+    onInstallStatus:     (cb)             => ipcRenderer.on('update-install-status', (_e, d) => cb(d)),
 });
