@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DEFIS — Вхід</title>
+    <style>
+        :root {
+            --bg-body:    #030303;
+            --bg-surface: #0E0E0E;
+            --bg-input:   #0a0a0a;
+            --border-dim:   #1a1a1a;
+            --border-med:   #2a2a2a;
+            --text-main:  #e0e0e0;
+            --text-muted: #666666;
+            --text-dim:   #444444;
+            --accent:       #8c32d4;
+            --accent-glow:  rgba(140,50,212,0.4);
+            --accent-hover: #9d4be2;
+            --radius-sm: 2px;
+            --radius-md: 4px;
+            --font-ui: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+        }
+        *, *::before, *::after { box-sizing: border-box; outline: none; margin: 0; padding: 0; }
+        body {
+            background: var(--bg-body);
+            color: var(--text-main);
+            font-family: var(--font-ui);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            letter-spacing: -0.01em;
+            -webkit-app-region: drag;
+        }
+
+        .login-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-dim);
+            border-radius: 8px;
+            padding: 36px 32px;
+            width: 380px;
+            -webkit-app-region: no-drag;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 28px;
+        }
+        .brand img {
+            width: 120px;
+            height: 120px;
+            object-fit: contain;
+            border-radius: 12px;
+        }
+
+        h2 {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-main);
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .form-group { margin-bottom: 14px; }
+        .label {
+            display: block;
+            color: var(--text-muted);
+            font-size: 11px;
+            font-weight: 500;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        input[type=text], input[type=email], input[type=password], input[type=url] {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border-dim);
+            color: var(--text-main);
+            padding: 9px 11px;
+            font-size: 13px;
+            border-radius: var(--radius-sm);
+            font-family: var(--font-ui);
+            transition: border-color .2s, box-shadow .2s;
+        }
+        input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 1px var(--accent-glow);
+        }
+        input::placeholder { color: var(--text-dim); }
+
+        .btn-primary {
+            width: 100%;
+            padding: 10px;
+            background: var(--accent);
+            border: 1px solid var(--accent);
+            color: #fff;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all .2s;
+            font-family: var(--font-ui);
+            letter-spacing: 0.02em;
+            box-shadow: 0 0 16px var(--accent-glow);
+            margin-top: 8px;
+        }
+        .btn-primary:hover { background: var(--accent-hover); transform: translateY(-1px); }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        .error-msg {
+            display: none;
+            color: #ff6b6b;
+            font-size: 12px;
+            margin-top: 10px;
+            padding: 8px 10px;
+            background: rgba(232,17,35,0.08);
+            border: 1px solid rgba(232,17,35,0.2);
+            border-radius: var(--radius-sm);
+        }
+        .error-msg.visible { display: block; }
+
+        .server-row {
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-dim);
+        }
+        .server-toggle {
+            font-size: 11px;
+            color: var(--text-muted);
+            cursor: pointer;
+            text-align: right;
+            margin-bottom: 6px;
+            user-select: none;
+        }
+        .server-toggle:hover { color: var(--accent); }
+        .server-url-group { display: none; }
+        .server-url-group.visible { display: block; }
+    </style>
+</head>
+<body>
+
+<div class="login-card">
+    <div class="brand">
+        <img src="logo.png" alt="DEFIS">
+    </div>
+    <h2>Вхід до системи</h2>
+
+    <div class="server-row">
+        <div class="server-toggle" id="server-toggle">Змінити сервер ▾</div>
+        <div class="server-url-group" id="server-url-group">
+            <label class="label">URL сервера</label>
+            <input type="url" id="server-url" placeholder="http://188.137.178.124:3717">
+        </div>
+    </div>
+
+    <form id="login-form" autocomplete="on">
+        <div class="form-group">
+            <label class="label" for="email">Email</label>
+            <input type="email" id="email" name="email" placeholder="admin@example.com" autocomplete="username" required>
+        </div>
+        <div class="form-group">
+            <label class="label" for="password">Пароль</label>
+            <input type="password" id="password" name="password" placeholder="••••••••" autocomplete="current-password" required>
+        </div>
+
+        <div class="error-msg" id="error-msg"></div>
+
+        <button type="submit" class="btn-primary" id="login-btn">Увійти</button>
+    </form>
+</div>
+
+<script>
+    const serverToggle  = document.getElementById('server-toggle');
+    const serverUrlGroup = document.getElementById('server-url-group');
+    const serverUrlInput = document.getElementById('server-url');
+    const loginForm     = document.getElementById('login-form');
+    const loginBtn      = document.getElementById('login-btn');
+    const errorMsg      = document.getElementById('error-msg');
+
+    let serverUrl = 'http://188.137.178.124:3717';
+
+    // Load saved server URL + remembered email
+    (async () => {
+        try {
+            const saved = await window.loginApi.getServerUrl();
+            if (saved) {
+                serverUrl = saved;
+                serverUrlInput.value = saved;
+            } else {
+                serverUrlInput.value = serverUrl;
+            }
+        } catch {}
+
+        // Prefill last-used email from localStorage
+        const savedEmail = localStorage.getItem('defis_last_email');
+        if (savedEmail) {
+            document.getElementById('email').value = savedEmail;
+            document.getElementById('password').focus();
+        }
+    })();
+
+    serverToggle.addEventListener('click', () => {
+        serverUrlGroup.classList.toggle('visible');
+        serverToggle.textContent = serverUrlGroup.classList.contains('visible')
+            ? 'Сховати ▴' : 'Змінити сервер ▾';
+    });
+
+    serverUrlInput.addEventListener('change', () => {
+        serverUrl = serverUrlInput.value.trim() || 'http://188.137.178.124:3717';
+    });
+
+    function showError(msg) {
+        errorMsg.textContent = msg;
+        errorMsg.classList.add('visible');
+    }
+
+    function hideError() {
+        errorMsg.classList.remove('visible');
+    }
+
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        hideError();
+
+        const email    = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+
+        if (!email || !password) { showError('Введіть email та пароль'); return; }
+
+        loginBtn.disabled    = true;
+        loginBtn.textContent = 'Вхід…';
+
+        try {
+            const result = await window.loginApi.login({ serverUrl, email, password });
+            if (result.ok) {
+                // Remember email for next time
+                localStorage.setItem('defis_last_email', email);
+                // Main process will close this window and open browser
+            } else {
+                showError(result.error || 'Помилка входу');
+                loginBtn.disabled    = false;
+                loginBtn.textContent = 'Увійти';
+            }
+        } catch (err) {
+            showError('Не вдалося з\'єднатися з сервером');
+            loginBtn.disabled    = false;
+            loginBtn.textContent = 'Увійти';
+        }
+    });
+</script>
+</body>
+</html>

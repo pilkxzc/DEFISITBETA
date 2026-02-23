@@ -1,0 +1,56 @@
+name: Feature Request
+description: Suggest an idea or improvement
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Got an idea that would make DEFIS better? Describe it clearly and we'll take a look.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: Which part of the app does this relate to?
+      options:
+        - Profile management
+        - Anti-detection
+        - AI Agent
+        - Chrome Extension support
+        - Proxy management
+        - Server / sync
+        - UI / UX
+        - Keyboard shortcuts
+        - Build / packaging
+        - New feature (other)
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / Motivation
+      description: What problem does this solve? What are you currently unable to do?
+      placeholder: "I'm frustrated when... / It would be useful if..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Describe what you'd like to happen. Be as specific as possible.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Are there workarounds you've tried? Other tools that do this?
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Mockups, screenshots, references to similar features in other tools — anything that helps illustrate the idea.

@@ -1,0 +1,2323 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DEFIS — Налаштування</title>
+    <style>
+        :root {
+            --bg-body:    #030303;
+            --bg-sidebar: #080808;
+            --bg-surface: #0E0E0E;
+            --bg-input:   #0a0a0a;
+            --border-dim:   #1a1a1a;
+            --border-med:   #2a2a2a;
+            --border-light: #333333;
+            --text-main:  #e0e0e0;
+            --text-muted: #666666;
+            --text-dim:   #444444;
+            --accent:       #8c32d4;
+            --accent-glow:  rgba(140,50,212,0.4);
+            --accent-hover: #9d4be2;
+            --radius-sm: 2px;
+            --radius-md: 4px;
+            --font-ui:   -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+            --font-mono: "JetBrains Mono","SF Mono",Consolas,monospace;
+        }
+        *, *::before, *::after { box-sizing: border-box; outline: none; }
+        body { margin:0; padding:0; background:var(--bg-body); color:var(--text-main); font-family:var(--font-ui); height:100vh; display:flex; overflow:hidden; font-size:13px; letter-spacing:-0.01em; }
+
+        /* ── Sidebar ─────────────────────────────────────────────── */
+        .sidebar { width:220px; background:var(--bg-sidebar); border-right:1px solid var(--border-dim); display:flex; flex-direction:column; padding:24px 12px; flex-shrink:0; }
+        .brand { display:flex; align-items:center; gap:10px; margin-bottom:32px; padding:0 8px; }
+        .logo-icon { width:28px; height:28px; border-radius:4px; overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+        .logo-icon img { width:28px; height:28px; object-fit:contain; }
+        .brand-name { font-weight:600; font-size:13px; letter-spacing:0.05em; text-transform:uppercase; }
+        .nav-group { display:flex; flex-direction:column; gap:2px; margin-bottom:20px; }
+        .nav-label { font-size:10px; text-transform:uppercase; color:var(--text-dim); margin-bottom:6px; padding-left:10px; font-weight:600; }
+        .nav-item { display:flex; align-items:center; gap:10px; padding:9px 10px; color:var(--text-muted); text-decoration:none; border-radius:var(--radius-md); transition:all .2s; font-weight:500; cursor:pointer; }
+        .nav-item:hover { color:var(--text-main); background:var(--bg-surface); }
+        .nav-item.active { color:var(--text-main); background:rgba(140,50,212,0.1); border-left:2px solid var(--accent); }
+        .nav-icon { width:15px; height:15px; fill:currentColor; opacity:0.7; flex-shrink:0; }
+
+        /* ── Main content ────────────────────────────────────────── */
+        .main-content { flex:1; overflow-y:auto; padding:28px 40px; }
+        .section { display:none; }
+        .section.active { display:block; }
+        .header { margin-bottom:32px; padding-bottom:14px; border-bottom:1px solid var(--border-dim); display:flex; justify-content:space-between; align-items:flex-end; }
+        .page-title { font-size:22px; font-weight:600; margin:0; color:var(--text-main); letter-spacing:-0.02em; }
+        .breadcrumbs { color:var(--text-muted); font-size:11px; margin-bottom:6px; }
+
+        /* ── Grid ────────────────────────────────────────────────── */
+        .settings-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(380px,1fr)); gap:20px; max-width:1100px; }
+
+        /* ── Card ────────────────────────────────────────────────── */
+        .card { background:var(--bg-surface); border:1px solid var(--border-dim); border-radius:var(--radius-md); padding:20px; transition:border-color .2s; }
+        .card:hover { border-color:var(--border-med); }
+        .card-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+        .card-title { font-size:13px; font-weight:600; color:var(--text-main); display:flex; align-items:center; gap:8px; }
+        .status-dot { width:6px; height:6px; border-radius:50%; background:var(--accent); box-shadow:0 0 8px var(--accent-glow); flex-shrink:0; }
+        .status-dot.inactive { background:var(--text-dim); box-shadow:none; }
+
+        /* ── Form elements ───────────────────────────────────────── */
+        .form-group { margin-bottom:14px; }
+        .form-group:last-child { margin-bottom:0; }
+        .label-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+        .label { color:var(--text-muted); font-size:12px; font-weight:500; }
+        .select-wrapper { position:relative; }
+        select, input[type=text], input[type=password], input[type=email] {
+            width:100%; background:var(--bg-input); border:1px solid var(--border-dim); color:var(--text-main);
+            padding:9px 11px; font-size:13px; border-radius:var(--radius-sm); appearance:none;
+            cursor:pointer; font-family:var(--font-ui); transition:all .2s;
+        }
+        input[type=text], input[type=password], input[type=email] { cursor:text; appearance:auto; }
+        select:hover, input[type=text]:hover, input[type=password]:hover { border-color:var(--border-med); }
+        select:focus, input[type=text]:focus, input[type=password]:focus, input[type=email]:focus { border-color:var(--accent); box-shadow:0 0 0 1px var(--accent-glow); }
+        .select-arrow { position:absolute; right:10px; top:50%; transform:translateY(-50%); pointer-events:none; width:0; height:0; border-left:4px solid transparent; border-right:4px solid transparent; border-top:4px solid var(--text-muted); }
+        .input-group input { width:100%; }
+
+        /* ── Toggle rows ─────────────────────────────────────────── */
+        .toggle-row { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border-dim); }
+        .toggle-row:last-child { border-bottom:none; }
+        .toggle-info { flex:1; padding-right:14px; }
+        .toggle-title { color:var(--text-main); font-size:13px; margin-bottom:2px; }
+        .toggle-desc { color:var(--text-dim); font-size:11px; }
+        .switch { position:relative; display:inline-block; width:36px; height:20px; }
+        .switch input { opacity:0; width:0; height:0; }
+        .slider { position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background:var(--bg-input); border:1px solid var(--border-med); transition:.3s; border-radius:20px; }
+        .slider:before { position:absolute; content:""; height:14px; width:14px; left:2px; bottom:2px; background:var(--text-muted); transition:.3s; border-radius:50%; }
+        input:checked + .slider { background:var(--accent); border-color:var(--accent); }
+        input:checked + .slider:before { transform:translateX(16px); background:#fff; }
+
+        /* ── Buttons ─────────────────────────────────────────────── */
+        .action-bar { position:sticky; bottom:0; background:linear-gradient(to top,var(--bg-body) 80%,transparent); padding:20px 0 0; margin-top:20px; display:flex; justify-content:flex-end; gap:10px; pointer-events:none; }
+        .action-btn { pointer-events:auto; padding:9px 22px; font-size:13px; font-weight:500; border-radius:var(--radius-md); cursor:pointer; transition:all .2s; font-family:var(--font-ui); }
+        .btn-secondary { background:transparent; border:1px solid var(--border-light); color:var(--text-main); }
+        .btn-secondary:hover { border-color:var(--text-muted); }
+        .btn-primary { background:var(--accent); border:1px solid var(--accent); color:#fff; box-shadow:0 0 12px var(--accent-glow); }
+        .btn-primary:hover { background:var(--accent-hover); transform:translateY(-1px); }
+        .btn-outline { background:transparent; border:1px solid var(--border-med); color:var(--text-muted); padding:6px 12px; font-size:12px; border-radius:var(--radius-sm); cursor:pointer; transition:all .2s; font-family:var(--font-ui); }
+        .btn-outline:hover { border-color:var(--accent); color:var(--accent); }
+        .btn-danger { background:rgba(232,17,35,0.1); border:1px solid rgba(232,17,35,0.25); color:#ff6b6b; padding:6px 12px; font-size:12px; border-radius:var(--radius-sm); cursor:pointer; transition:all .2s; font-family:var(--font-ui); }
+        .btn-danger:hover { background:rgba(232,17,35,0.25); }
+
+        /* ── Tags ────────────────────────────────────────────────── */
+        .tag { background:var(--bg-input); border:1px solid var(--border-dim); color:var(--text-muted); padding:4px 8px; border-radius:var(--radius-sm); font-size:11px; font-family:var(--font-mono); display:inline-block; }
+
+        /* ── Profile picker ──────────────────────────────────────── */
+        .profile-picker { display:flex; align-items:center; gap:10px; padding:12px 16px; background:var(--bg-surface); border:1px solid var(--border-dim); border-radius:var(--radius-md); margin-bottom:24px; }
+        .profile-picker label { font-size:12px; color:var(--text-muted); flex-shrink:0; }
+        .profile-picker select { width:auto; flex:1; }
+        .profile-picker-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+
+        /* ── Proxy status ────────────────────────────────────────── */
+        .proxy-status { display:flex; align-items:center; gap:8px; padding:10px 12px; background:var(--bg-input); border:1px solid var(--border-dim); border-radius:var(--radius-sm); margin-top:8px; font-size:12px; color:var(--text-muted); }
+        .proxy-dot-lg { width:8px; height:8px; border-radius:50%; background:#444; flex-shrink:0; }
+
+        /* ── Table ───────────────────────────────────────────────── */
+        .data-table { border:1px solid var(--border-dim); border-radius:4px; overflow:hidden; }
+        .data-table-head { display:grid; padding:10px 14px; background:var(--bg-input); font-size:10px; color:var(--text-dim); font-weight:600; text-transform:uppercase; letter-spacing:0.04em; }
+        .data-table-row { display:grid; padding:10px 14px; border-top:1px solid var(--border-dim); align-items:center; font-size:12px; }
+
+        /* ── Toast ───────────────────────────────────────────────── */
+        #s-toast { position:fixed; bottom:24px; right:24px; z-index:9999; display:flex; flex-direction:column; gap:8px; pointer-events:none; }
+        .s-toast-item { background:#1F1F1F; border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:10px 14px; font-size:12px; color:#E5E5E5; animation:toastIn .3s ease; pointer-events:none; }
+        .s-toast-item.success { border-left:3px solid #28c840; }
+        .s-toast-item.error   { border-left:3px solid #e81123; }
+        .s-toast-item.info    { border-left:3px solid #8c32d4; }
+        @keyframes toastIn { from{opacity:0;transform:translateX(20px)} to{opacity:1;transform:translateX(0)} }
+
+        /* ── Scrollbar ───────────────────────────────────────────── */
+        ::-webkit-scrollbar { width:6px; }
+        ::-webkit-scrollbar-track { background:var(--bg-body); }
+        ::-webkit-scrollbar-thumb { background:var(--border-light); border-radius:3px; }
+        ::-webkit-scrollbar-thumb:hover { background:var(--text-muted); }
+
+        /* ── Assignment Layout ───────────────────────────────────────── */
+        .at-layout { display:flex; height:calc(100vh - 200px); border:1px solid var(--border-dim); border-radius:var(--radius-md); overflow:hidden; background:var(--bg-surface); }
+        .at-users-panel { width:280px; flex-shrink:0; overflow-y:auto; border-right:1px solid var(--border-dim); display:flex; flex-direction:column; }
+        .at-profiles-panel { flex:1; overflow-y:auto; padding:16px 20px; }
+        .at-panel-header { padding:12px 14px; border-bottom:1px solid var(--border-dim); flex-shrink:0; }
+        .at-add-form { background:var(--bg-body); border-bottom:1px solid var(--border-dim); padding:0 14px; overflow:hidden; max-height:0; transition:max-height .25s ease, padding .25s ease; }
+        .at-add-form.open { max-height:420px; padding:12px 14px; }
+        .at-user-card { display:flex; align-items:center; gap:10px; padding:10px 14px; cursor:pointer; border-left:3px solid transparent; transition:background .15s, border-color .15s; position:relative; }
+        .at-user-card:hover { background:rgba(255,255,255,0.03); }
+        .at-user-card.selected { background:rgba(140,50,212,0.08); border-left-color:var(--accent); }
+        .at-user-card.drag-over { background:rgba(140,50,212,0.18); border-left-color:var(--accent); }
+        .at-avatar { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0; border:1px solid; }
+        .at-user-info { flex:1; min-width:0; }
+        .at-user-name { color:var(--text-main); font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .at-user-meta { font-size:11px; color:var(--text-dim); margin-top:1px; }
+        .at-count-badge { font-size:11px; color:var(--text-muted); background:var(--bg-input); border:1px solid var(--border-dim); border-radius:10px; padding:1px 7px; flex-shrink:0; }
+        .at-del-btn { opacity:0; transition:opacity .15s; background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:16px; padding:0 4px; line-height:1; flex-shrink:0; }
+        .at-user-card:hover .at-del-btn { opacity:1; }
+        .at-del-btn:hover { color:#ff6b6b; }
+        .at-profile-chip { display:inline-flex; align-items:center; gap:5px; padding:5px 9px; background:var(--bg-input); border:1px solid var(--border-dim); border-radius:var(--radius-sm); font-size:12px; transition:all .15s; user-select:none; }
+        .at-profile-chip:not(.assigned) { cursor:grab; }
+        .at-profile-chip:not(.assigned):hover { border-color:var(--border-light); background:var(--bg-surface); }
+        .at-profile-chip.assigned { background:rgba(140,50,212,0.12); border-color:rgba(140,50,212,0.4); color:var(--text-main); cursor:default; }
+        .at-profile-chip.drag-active { opacity:0.45; cursor:grabbing; }
+        .at-chip-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+        .at-chip-num { color:var(--text-dim); font-family:var(--font-mono); font-size:11px; }
+        .at-chip-x { margin-left:3px; cursor:pointer; color:rgba(140,50,212,0.7); font-size:15px; line-height:1; padding:0 1px; }
+        .at-chip-x:hover { color:var(--accent); }
+        .at-section-label { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-dim); margin:14px 0 8px; }
+        .at-section-label:first-child { margin-top:0; }
+        .at-profiles-grid { display:flex; flex-wrap:wrap; gap:6px; min-height:28px; }
+        .at-search { background:var(--bg-input); border:1px solid var(--border-dim); color:var(--text-main); padding:7px 10px; font-size:12px; border-radius:var(--radius-sm); width:100%; font-family:var(--font-ui); transition:border-color .2s; }
+        .at-search:focus { border-color:var(--accent); outline:none; box-shadow:0 0 0 1px var(--accent-glow); }
+        .at-search::placeholder { color:var(--text-dim); }
+        .at-empty { color:var(--text-dim); font-size:12px; padding:4px 0; font-style:italic; }
+
+        /* Chrome import modal */
+        #chrome-import-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); backdrop-filter:blur(4px); z-index:9999; align-items:center; justify-content:center; }
+        #chrome-import-modal.open { display:flex; }
+        #chrome-import-box { background:#1a1a1a; border:1px solid rgba(255,255,255,.12); border-radius:12px; width:520px; max-width:95vw; max-height:80vh; display:flex; flex-direction:column; overflow:hidden; }
+        #chrome-import-box header { display:flex; align-items:center; padding:16px 20px; border-bottom:1px solid rgba(255,255,255,.08); gap:10px; }
+        #chrome-import-box header h3 { flex:1; margin:0; font-size:14px; color:#E5E5E5; font-weight:600; }
+        #chrome-import-close { background:none; border:none; color:#666; font-size:18px; cursor:pointer; padding:4px 8px; border-radius:6px; line-height:1; }
+        #chrome-import-close:hover { color:#E5E5E5; background:rgba(255,255,255,.06); }
+        #chrome-import-list { overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:6px; flex:1; }
+        .chrome-ext-row { display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:8px; background:#242424; border:1px solid rgba(255,255,255,.06); }
+        .chrome-ext-row:hover { background:#2a2a2a; border-color:rgba(255,255,255,.1); }
+        .chrome-ext-icon { width:32px; height:32px; border-radius:6px; flex-shrink:0; object-fit:contain; background:#111; }
+        .chrome-ext-info { flex:1; min-width:0; }
+        .chrome-ext-name { font-size:13px; color:#E5E5E5; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .chrome-ext-id   { font-size:10px; color:#555; font-family:var(--font-mono); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .chrome-ext-btn  { padding:4px 12px; font-size:11px; white-space:nowrap; flex-shrink:0; }
+        #chrome-import-empty { padding:24px; text-align:center; color:#555; font-size:13px; }
+
+        /* ── Version upload UI ─────────────────────────────────────── */
+        .ver-plat-card {
+            background: var(--bg-input,#1a1a1a);
+            border: 1px solid var(--border-dim,#2a2a2a);
+            border-radius: 10px;
+            overflow: hidden;
+            transition: border-color .2s;
+        }
+        .ver-plat-card:hover { border-color: var(--border-med,#444); }
+
+        .ver-drop-zone {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 6px; padding: 20px 12px; cursor: pointer;
+            text-align: center; user-select: none;
+            transition: background .15s;
+            min-height: 120px;
+        }
+        .ver-drop-zone:hover, .ver-drop-zone.drag-over {
+            background: rgba(140,50,212,.07);
+        }
+        .ver-drop-zone.drag-over { border-color: var(--accent,#8c32d4) !important; }
+        .ver-plat-label { font-size:13px; font-weight:600; color:var(--text-main); }
+        .ver-plat-hint  { font-size:11px; color:var(--text-dim,#555); }
+        .ver-drop-hint  { font-size:10px; color:var(--text-dim,#444); margin-top:2px; }
+
+        .ver-file-info {
+            display: flex; align-items: center; gap:8px;
+            padding: 8px 10px; background: rgba(40,200,64,.06);
+            border-top: 1px solid rgba(40,200,64,.15);
+        }
+        .ver-fname { font-size:11px; color:var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .ver-fsize { font-size:10px; color:var(--text-dim,#555); }
+        .ver-del-btn {
+            background: none; border: none; color: var(--text-dim,#555);
+            cursor: pointer; padding: 2px 4px; font-size:12px;
+            border-radius:4px; transition: color .15s, background .15s; flex-shrink:0;
+        }
+        .ver-del-btn:hover { color:#e06c75; background:rgba(224,108,117,.1); }
+
+        .ver-progress-wrap {
+            display: flex; align-items: center; gap:8px;
+            padding: 8px 10px; border-top: 1px solid var(--border-dim,#2a2a2a);
+            background: var(--bg-surface);
+        }
+        .ver-progress-bar {
+            flex: 1; height: 4px; border-radius: 2px;
+            background: var(--border-dim,#2a2a2a);
+            position: relative; overflow: hidden;
+        }
+        .ver-progress-bar::after {
+            content:''; position:absolute; left:0; top:0; height:100%;
+            background: var(--accent,#8c32d4);
+            width: var(--pct,0%); transition: width .1s;
+            border-radius: 2px;
+        }
+        .ver-progress-pct { font-size:10px; color:var(--text-muted); flex-shrink:0; width:28px; text-align:right; }
+
+        .ver-platform-badge {
+            display:inline-flex; align-items:center; gap:5px;
+            padding:3px 10px 3px 7px; border-radius:20px; font-size:11px; font-weight:500;
+            border:1px solid var(--border-dim,#2a2a2a); color:var(--text-muted);
+            text-decoration:none; cursor:pointer;
+            transition: border-color .15s, color .15s;
+        }
+        .ver-platform-badge:hover { border-color:var(--accent,#8c32d4); color:var(--text-main); }
+    </style>
+</head>
+<body>
+
+<!-- Chrome extensions import modal -->
+<div id="chrome-import-modal">
+    <div id="chrome-import-box">
+        <header>
+            <h3>Розширення з Chrome</h3>
+            <button id="chrome-import-close">&#x2715;</button>
+        </header>
+        <div id="chrome-import-list">
+            <div id="chrome-import-empty">Завантаження…</div>
+        </div>
+    </div>
+</div>
+
+<!-- ══════ SIDEBAR ══════════════════════════════════════════════════ -->
+<nav class="sidebar">
+    <div class="brand">
+        <div class="logo-icon"><img src="logo.png" alt="D"></div>
+        <div class="brand-name">DEFIS</div>
+    </div>
+
+    <div class="nav-group">
+        <div class="nav-label">Основне</div>
+        <a class="nav-item" data-section="overview">
+            <svg class="nav-icon" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+            Огляд
+        </a>
+        <a class="nav-item active" data-section="profiles">
+            <svg class="nav-icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
+            Профілі
+        </a>
+        <a class="nav-item" data-section="proxy">
+            <svg class="nav-icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+            Проксі
+        </a>
+    </div>
+
+    <div class="nav-group">
+        <div class="nav-label">Налаштування</div>
+        <a class="nav-item" data-section="configuration">
+            <svg class="nav-icon" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+            Конфігурація
+        </a>
+        <a class="nav-item" data-section="translator">
+            <svg class="nav-icon" viewBox="0 0 24 24"><path d="M12.87 15.07l-2.54-2.51.03-.03A17.52 17.52 0 0 0 14.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/></svg>
+            Перекладач
+        </a>
+        <a class="nav-item" data-section="team">
+            <svg class="nav-icon" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+            Команда
+        </a>
+        <a class="nav-item" data-section="agent">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+            AI Агент
+        </a>
+        <a class="nav-item" data-section="version">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+            Версія / Оновлення
+        </a>
+    </div>
+
+    <!-- ── User info + Logout ──────────────────────────────────── -->
+    <div id="sidebar-user" style="margin-top:auto;padding-top:16px;border-top:1px solid var(--border-dim)">
+        <div style="display:flex;align-items:center;gap:9px;padding:6px 8px;border-radius:var(--radius-md)">
+            <div id="sidebar-avatar" style="
+                width:30px;height:30px;border-radius:50%;flex-shrink:0;
+                background:rgba(140,50,212,.2);border:1px solid rgba(140,50,212,.3);
+                display:flex;align-items:center;justify-content:center;
+                font-size:12px;font-weight:700;color:var(--accent);
+                text-transform:uppercase;letter-spacing:0">—</div>
+            <div style="flex:1;min-width:0">
+                <div id="sidebar-uname" style="font-size:12px;font-weight:600;color:var(--text-main);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
+                <div id="sidebar-urole" style="font-size:10px;color:var(--text-dim)">—</div>
+            </div>
+        </div>
+        <button id="sidebar-logout-btn" style="
+            width:100%;margin-top:6px;padding:7px 10px;
+            background:none;border:1px solid var(--border-dim);
+            color:var(--text-muted);font-size:12px;font-weight:500;
+            border-radius:var(--radius-md);cursor:pointer;
+            display:flex;align-items:center;justify-content:center;gap:7px;
+            font-family:var(--font-ui);transition:all .2s;
+        ">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+            </svg>
+            Вийти з акаунту
+        </button>
+    </div>
+</nav>
+
+<!-- ══════ MAIN CONTENT ═════════════════════════════════════════════ -->
+<main class="main-content">
+
+    <!-- ── OVERVIEW ─────────────────────────────────────────────── -->
+    <div id="section-overview" class="section">
+        <div class="breadcrumbs">Головна / Огляд</div>
+        <div class="header"><h1 class="page-title">Панель управління</h1></div>
+        <div class="settings-grid">
+            <div class="card">
+                <div class="card-header"><div class="card-title"><span class="status-dot"></span>Профілі</div></div>
+                <div id="ov-total" style="font-size:32px;font-weight:600;color:var(--accent);margin:12px 0">—</div>
+                <div style="font-size:12px;color:var(--text-muted)">Всього профілів</div>
+            </div>
+            <div class="card">
+                <div class="card-header"><div class="card-title"><span class="status-dot"></span>Проксі</div></div>
+                <div id="ov-proxy" style="font-size:32px;font-weight:600;color:var(--text-main);margin:12px 0">—</div>
+                <div style="font-size:12px;color:var(--text-muted)">Профілів з проксі</div>
+            </div>
+            <div class="card">
+                <div class="card-header"><div class="card-title"><span class="status-dot inactive"></span>Попередження</div></div>
+                <div style="font-size:32px;font-weight:600;color:var(--text-dim);margin:12px 0">0</div>
+                <div style="font-size:12px;color:var(--text-muted)">Проблем не виявлено</div>
+            </div>
+        </div>
+        <!-- Profiles table -->
+        <div style="margin-top:28px;max-width:1100px">
+            <div style="font-size:13px;font-weight:600;color:var(--text-main);margin-bottom:12px">Список профілів</div>
+            <div class="data-table">
+                <div class="data-table-head" style="grid-template-columns:60px 2fr 1fr 2fr 1fr">
+                    <div>#</div><div>Назва</div><div>ОС</div><div>Проксі</div><div>Fingerprint</div>
+                </div>
+                <div id="ov-profiles-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── PROFILES ──────────────────────────────────────────────── -->
+    <div id="section-profiles" class="section active">
+        <div class="breadcrumbs">Профілі / Налаштування</div>
+        <div class="header">
+            <h1 class="page-title">Налаштування профілю</h1>
+        </div>
+
+        <!-- Profile picker -->
+        <div class="profile-picker">
+            <label>Профіль:</label>
+            <span class="profile-picker-dot" id="pp-dot" style="background:#9d7cce"></span>
+            <div class="select-wrapper" style="flex:1">
+                <select id="pp-select"></select>
+                <div class="select-arrow"></div>
+            </div>
+        </div>
+
+        <div class="settings-grid">
+            <!-- General -->
+            <div class="card">
+                <div class="card-header"><div class="card-title"><span class="status-dot"></span>Загальні</div></div>
+                <div class="form-group">
+                    <div style="display:grid;grid-template-columns:1fr 120px;gap:10px">
+                        <div>
+                            <div class="label-row"><label class="label">Назва профілю</label></div>
+                            <div class="input-group"><input type="text" id="s-name" placeholder="Введіть назву"></div>
+                        </div>
+                        <div>
+                            <div class="label-row"><label class="label">Номер</label></div>
+                            <div class="input-group"><input type="number" id="s-number" placeholder="—" min="1" style="font-family:var(--font-mono);text-align:center"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="label-row"><label class="label">Операційна система</label></div>
+                    <div class="select-wrapper">
+                        <select id="s-os">
+                            <option value="win11">Windows 11</option>
+                            <option value="win10">Windows 10</option>
+                            <option value="macos">macOS Ventura</option>
+                            <option value="linux">Linux Ubuntu</option>
+                        </select>
+                        <div class="select-arrow"></div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="label-row"><label class="label">Версія браузера</label></div>
+                    <div class="select-wrapper">
+                        <select id="s-bv">
+                            <option value="chrome120">Chrome 120.0 (Latest)</option>
+                            <option value="chrome119">Chrome 119.0</option>
+                            <option value="chrome118">Chrome 118.0</option>
+                            <option value="firefox120">Firefox 120.0</option>
+                        </select>
+                        <div class="select-arrow"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Proxy -->
+            <div class="card">
+                <div class="card-header"><div class="card-title"><span class="status-dot"></span>Проксі та Мережа</div></div>
+                <div class="form-group">
+                    <div class="label-row"><label class="label">Тип з'єднання</label></div>
+                    <div class="select-wrapper">
+                        <select id="s-proxy-type">
+                            <option value="http">HTTP/HTTPS</option>
+                            <option value="socks5">SOCKS5</option>
+                            <option value="direct">No Proxy (Direct)</option>
+                        </select>
+                        <div class="select-arrow"></div>
+                    </div>
+                </div>
+                <div class="form-group" id="s-proxy-host-row">
+                    <div class="label-row"><label class="label">Хост</label></div>
+                    <div class="input-group"><input type="text" id="s-proxy-host" placeholder="192.168.0.1" style="font-family:var(--font-mono)"></div>
+                </div>
+                <div class="form-group" id="s-proxy-port-row">
+                    <div class="label-row"><label class="label">Порт</label></div>
+                    <div class="input-group"><input type="text" id="s-proxy-port" placeholder="8080" style="font-family:var(--font-mono)"></div>
+                </div>
+                <div class="form-group" id="s-proxy-creds-row">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                        <div>
+                            <div class="label" style="margin-bottom:4px">Логін</div>
+                            <input type="text" id="s-proxy-user" placeholder="username" style="font-family:var(--font-mono)">
+                        </div>
+                        <div>
+                            <div class="label" style="margin-bottom:4px">Пароль</div>
+                            <input type="password" id="s-proxy-pass" placeholder="••••••">
+                        </div>
+                    </div>
+                </div>
+                <div class="toggle-row">
+                    <div class="toggle-info">
+                        <div class="toggle-title">WebRTC захист</div>
+                        <div class="toggle-desc">Блокувати витік реального IP</div>
+                    </div>
+                    <label class="switch"><input type="checkbox" id="s-webrtc" checked><span class="slider"></span></label>
+                </div>
+                <!-- Proxy test -->
+                <div id="s-proxy-test-row" style="margin-top:10px;display:flex;align-items:center;gap:10px">
+                    <button class="btn-outline" id="s-proxy-test-btn">Перевірити проксі</button>
+                    <div class="proxy-status" style="flex:1">
+                        <span class="proxy-dot-lg" id="s-proxy-dot"></span>
+                        <span id="s-proxy-label">—</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fingerprints -->
+            <div class="card">
+                <div class="card-header"><div class="card-title"><span class="status-dot"></span>Приватність та Фінгерпринти</div></div>
+                <div class="toggle-row">
+                    <div class="toggle-info"><div class="toggle-title">Canvas</div><div class="toggle-desc">Мікро-шум у Canvas API</div></div>
+                    <label class="switch"><input type="checkbox" id="s-canvas" checked><span class="slider"></span></label>
+                </div>
+                <div class="toggle-row">
+                    <div class="toggle-info"><div class="toggle-title">WebGL</div><div class="toggle-desc">Маскування вендора GPU (Intel)</div></div>
+                    <label class="switch"><input type="checkbox" id="s-webgl" checked><span class="slider"></span></label>
+                </div>
+                <div class="toggle-row">
+                    <div class="toggle-info"><div class="toggle-title">AudioContext</div><div class="toggle-desc">Шум у аудіо стеку</div></div>
+                    <label class="switch"><input type="checkbox" id="s-audio" checked><span class="slider"></span></label>
+                </div>
+                <div class="toggle-row">
+                    <div class="toggle-info"><div class="toggle-title">Геолокація</div><div class="toggle-desc">Базується на IP проксі</div></div>
+                    <label class="switch"><input type="checkbox" id="s-geo" checked><span class="slider"></span></label>
+                </div>
+            </div>
+
+            <!-- Advanced -->
+            <div class="card">
+                <div class="card-header"><div class="card-title"><span class="status-dot inactive"></span>Розширені</div></div>
+                <div class="form-group">
+                    <div class="label-row"><label class="label">Часовий пояс</label></div>
+                    <div class="select-wrapper">
+                        <select id="s-tz">
+                            <option value="auto">Авто (базується на IP)</option>
+                            <option value="manual">Ручний вибір</option>
+                        </select>
+                        <div class="select-arrow"></div>
+                    </div>
+                </div>
+                <div class="form-group" id="s-tz-value-row" style="display:none">
+                    <div class="label-row"><label class="label">Значення часового поясу</label></div>
+                    <div class="select-wrapper">
+                        <select id="s-tz-value">
+                            <option value="Europe/Kyiv">Europe/Kyiv (UTC+2/+3)</option>
+                            <option value="Europe/Berlin">Europe/Berlin (UTC+1/+2)</option>
+                            <option value="Europe/London">Europe/London (UTC+0/+1)</option>
+                            <option value="America/New_York">America/New_York (UTC-5/-4)</option>
+                            <option value="America/Los_Angeles">America/Los_Angeles (UTC-8/-7)</option>
+                            <option value="Asia/Tokyo">Asia/Tokyo (UTC+9)</option>
+                            <option value="Asia/Dubai">Asia/Dubai (UTC+4)</option>
+                            <option value="UTC">UTC (UTC+0)</option>
+                        </select>
+                        <div class="select-arrow"></div>
+                    </div>
+                </div>
+                <div class="toggle-row">
+                    <div class="toggle-info"><div class="toggle-title">Do Not Track</div><div class="toggle-desc">Відправляти DNT заголовок</div></div>
+                    <label class="switch"><input type="checkbox" id="s-dnt"><span class="slider"></span></label>
+                </div>
+                <div class="toggle-row">
+                    <div class="toggle-info"><div class="toggle-title">Шрифти</div><div class="toggle-desc">Емуляція системних шрифтів ОС</div></div>
+                    <label class="switch"><input type="checkbox" id="s-fonts" checked><span class="slider"></span></label>
+                </div>
+            </div>
+        </div>
+
+            <!-- Chrome Extensions -->
+            <div class="card" style="grid-column:1/-1">
+                <div class="card-header">
+                    <div class="card-title"><span class="status-dot"></span>Chrome Розширення</div>
+                </div>
+
+                <!-- Install input -->
+                <div style="display:flex;gap:8px;margin-bottom:6px">
+                    <input type="text" id="ext-input" placeholder="ID або посилання Chrome Web Store…" style="flex:1;font-family:var(--font-mono)">
+                    <button class="btn-outline" id="ext-install-btn" style="white-space:nowrap;padding:0 16px">Встановити</button>
+                </div>
+                <div id="ext-install-status" style="font-size:12px;color:var(--text-muted);min-height:18px;margin-bottom:10px"></div>
+
+                <!-- Import from local Chrome/Chromium -->
+                <button class="btn-outline" id="ext-import-chrome-btn" style="width:100%;margin-bottom:16px;padding:8px 16px;display:flex;align-items:center;justify-content:center;gap:8px">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px;flex-shrink:0"><circle cx="12" cy="12" r="10"/><path stroke-linecap="round" stroke-linejoin="round" d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>
+                    Імпортувати з Chrome (без завантаження)
+                </button>
+
+                <!-- Installed list -->
+                <div id="ext-list" style="display:flex;flex-direction:column;gap:6px">
+                    <div style="font-size:12px;color:var(--text-dim)">Жодного розширення не встановлено</div>
+                </div>
+
+                <!-- WallChain quick-install hint -->
+                <div style="margin-top:12px;padding:8px 12px;background:rgba(157,124,206,0.07);border:1px solid rgba(157,124,206,0.18);border-radius:6px;display:flex;align-items:center;gap:10px">
+                    <div style="flex:1;font-size:11px;color:var(--text-dim)">
+                        💡 WallChain Agent ID:
+                        <code style="font-family:var(--font-mono);color:#9d7cce;font-size:10.5px">hmkmpdakcjpihbpfolonciflbkjkojdb</code>
+                    </div>
+                    <button class="btn-outline" id="ext-quick-wallchain" style="padding:3px 10px;font-size:11px;white-space:nowrap;flex-shrink:0">Встановити</button>
+                </div>
+
+                <div style="margin-top:10px;font-size:11px;color:var(--text-dim);line-height:1.6">
+                    Вставте посилання або ID з <span style="color:var(--text-muted)">chromewebstore.google.com</span> і натисніть «Встановити».<br>
+                    Або скористайтесь «Імпортувати з Chrome» — швидко і без інтернету.<br>
+                    ⚠ Зміни діють після перезапуску профілю (кнопка «Перезапустити профіль»).
+                </div>
+            </div>
+
+        </div>
+
+        <div class="action-bar">
+            <button type="button" class="action-btn btn-secondary" id="s-reset">Скинути</button>
+            <button type="button" class="action-btn btn-primary"   id="s-save">Зберегти профіль</button>
+        </div>
+    </div>
+
+    <!-- ── PROXY ─────────────────────────────────────────────────── -->
+    <div id="section-proxy" class="section">
+        <div class="breadcrumbs">Мережа / Проксі</div>
+        <div class="header"><h1 class="page-title">Управління проксі</h1></div>
+        <div class="settings-grid">
+            <div class="card">
+                <div class="card-header"><div class="card-title"><span class="status-dot"></span>Проксі по профілях</div></div>
+                <div id="proxy-profiles-list" style="display:flex;flex-direction:column;gap:10px"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── CONFIGURATION ─────────────────────────────────────────── -->
+    <div id="section-configuration" class="section">
+        <div class="breadcrumbs">Налаштування / Конфігурація</div>
+        <div class="header"><h1 class="page-title">Глобальні налаштування</h1></div>
+        <div class="settings-grid">
+            <div class="card">
+                <div class="card-header"><div class="card-title"><span class="status-dot"></span>Автоматизація</div></div>
+                <div class="toggle-row">
+                    <div class="toggle-info"><div class="toggle-title">Авто-ротація fingerprint</div><div class="toggle-desc">Змінювати при кожному запуску</div></div>
+                    <label class="switch"><input type="checkbox" id="c-rotate"><span class="slider"></span></label>
+                </div>
+                <div class="toggle-row">
+                    <div class="toggle-info"><div class="toggle-title">Очищення після сесії</div><div class="toggle-desc">Видаляти cookies та кеш</div></div>
+                    <label class="switch"><input type="checkbox" id="c-clear"><span class="slider"></span></label>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header"><div class="card-title"><span class="status-dot"></span>Безпека</div></div>
+                <div class="form-group">
+                    <div class="label-row"><label class="label">Рівень захисту</label></div>
+                    <div class="select-wrapper">
+                        <select id="c-protection">
+                            <option value="basic">Базовий</option>
+                            <option value="high" selected>Високий</option>
+                            <option value="max">Максимальний</option>
+                        </select>
+                        <div class="select-arrow"></div>
+                    </div>
+                </div>
+                <div class="toggle-row">
+                    <div class="toggle-info"><div class="toggle-title">Підтвердження закриття</div><div class="toggle-desc">Запитувати перед закриттям вікна</div></div>
+                    <label class="switch"><input type="checkbox" id="c-confirm-close"><span class="slider"></span></label>
+                </div>
+            </div>
+        </div>
+            <div class="card">
+                <div class="card-header"><div class="card-title"><span class="status-dot inactive"></span>Сервер</div></div>
+                <div class="form-group">
+                    <div class="label-row"><label class="label">URL сервера</label></div>
+                    <div class="input-group"><input type="text" id="c-server-url" placeholder="http://188.137.178.124:3717" style="font-family:var(--font-mono)"></div>
+                </div>
+                <div style="font-size:11px;color:var(--text-dim);margin-top:4px">Адреса DEFIS Server. Зміна потребує перезапуску.</div>
+            </div>
+        </div>
+            <div class="card">
+                <div class="card-header"><div class="card-title"><span class="status-dot inactive" id="devmode-dot"></span>Розробка</div></div>
+                <div class="toggle-row">
+                    <div class="toggle-info">
+                        <div class="toggle-title">Dev Mode</div>
+                        <div class="toggle-desc">Автоматично відкривати DevTools у окремому вікні для кожної вкладки</div>
+                    </div>
+                    <label class="switch"><input type="checkbox" id="c-devmode"><span class="slider"></span></label>
+                </div>
+            </div>
+        </div>
+        <div class="action-bar">
+            <button type="button" class="action-btn btn-primary" id="c-save">Зберегти конфігурацію</button>
+        </div>
+    </div>
+
+    <!-- ── TRANSLATOR ───────────────────────────────────────────── -->
+    <div id="section-translator" class="section">
+        <div class="breadcrumbs">Налаштування / Перекладач</div>
+        <div class="header"><h1 class="page-title">Вбудований перекладач</h1></div>
+        <div class="settings-grid">
+            <div class="card">
+                <div class="card-header"><div class="card-title"><span class="status-dot"></span>Загальне</div></div>
+                <div class="toggle-row">
+                    <div class="toggle-info">
+                        <div class="toggle-title">Увімкнути перекладач</div>
+                        <div class="toggle-desc">Показувати переклад при виділенні тексту</div>
+                    </div>
+                    <label class="switch"><input type="checkbox" id="tr-enabled"><span class="slider"></span></label>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header"><div class="card-title"><span class="status-dot"></span>Мови перекладу</div></div>
+                <div class="form-group">
+                    <div class="label-row"><label class="label">Мова оригіналу</label></div>
+                    <div class="select-wrapper">
+                        <select id="tr-source">
+                            <option value="auto">Автовизначення</option>
+                            <option value="en">Англійська (EN)</option>
+                            <option value="uk">Українська (UK)</option>
+                            <option value="de">Німецька (DE)</option>
+                            <option value="fr">Французька (FR)</option>
+                            <option value="es">Іспанська (ES)</option>
+                            <option value="it">Італійська (IT)</option>
+                            <option value="pl">Польська (PL)</option>
+                            <option value="pt">Португальська (PT)</option>
+                            <option value="ru">Російська (RU)</option>
+                            <option value="zh">Китайська (ZH)</option>
+                            <option value="ja">Японська (JA)</option>
+                            <option value="ko">Корейська (KO)</option>
+                            <option value="ar">Арабська (AR)</option>
+                            <option value="tr">Турецька (TR)</option>
+                            <option value="nl">Нідерландська (NL)</option>
+                            <option value="cs">Чеська (CS)</option>
+                            <option value="sv">Шведська (SV)</option>
+                            <option value="he">Іврит (HE)</option>
+                            <option value="hi">Гінді (HI)</option>
+                            <option value="id">Індонезійська (ID)</option>
+                            <option value="vi">В'єтнамська (VI)</option>
+                        </select>
+                        <div class="select-arrow"></div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="label-row"><label class="label">Мова перекладу</label></div>
+                    <div class="select-wrapper">
+                        <select id="tr-target">
+                            <option value="uk">Українська (UK)</option>
+                            <option value="en">Англійська (EN)</option>
+                            <option value="de">Німецька (DE)</option>
+                            <option value="fr">Французька (FR)</option>
+                            <option value="es">Іспанська (ES)</option>
+                            <option value="it">Італійська (IT)</option>
+                            <option value="pl">Польська (PL)</option>
+                            <option value="pt">Португальська (PT)</option>
+                            <option value="ru">Російська (RU)</option>
+                            <option value="zh">Китайська (ZH)</option>
+                            <option value="ja">Японська (JA)</option>
+                            <option value="ko">Корейська (KO)</option>
+                            <option value="ar">Арабська (AR)</option>
+                            <option value="tr">Турецька (TR)</option>
+                            <option value="nl">Нідерландська (NL)</option>
+                            <option value="cs">Чеська (CS)</option>
+                            <option value="sv">Шведська (SV)</option>
+                            <option value="he">Іврит (HE)</option>
+                            <option value="hi">Гінді (HI)</option>
+                            <option value="id">Індонезійська (ID)</option>
+                            <option value="vi">В'єтнамська (VI)</option>
+                        </select>
+                        <div class="select-arrow"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header"><div class="card-title"><span class="status-dot"></span>Комбінація клавіш</div></div>
+                <div class="form-group">
+                    <div class="label-row"><label class="label">Перекласти та замінити виділений текст</label></div>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <input type="text" id="tr-shortcut" readonly placeholder="Натисніть для запису…"
+                               style="flex:1;cursor:pointer;font-family:var(--font-mono,monospace);font-size:13px;letter-spacing:.5px;">
+                        <button type="button" id="tr-shortcut-clear" class="btn-outline"
+                                style="padding:6px 14px;font-size:12px;white-space:nowrap;flex-shrink:0;">Очистити</button>
+                    </div>
+                    <div style="font-size:11px;color:var(--text-dim,#888);margin-top:6px;">
+                        Натисніть на поле та введіть комбінацію (напр. Alt+T). В полі введення текст замінюється автоматично без попапу.
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header"><div class="card-title"><span class="status-dot"></span>Підказка</div></div>
+                <div style="font-size:13px;color:var(--text-muted);line-height:1.6;padding:4px 0;">
+                    Виділіть будь-який текст на сторінці — автоматично з'явиться картка перекладу.<br><br>
+                    Кнопка <b>«Замінити»</b> з'являється коли текст виділено в полі введення — заміняє оригінал перекладом.<br><br>
+                    Також доступно через <b>праву кнопку миші → Перекласти</b>.
+                </div>
+            </div>
+        </div>
+        <div class="action-bar">
+            <button type="button" class="action-btn btn-primary" id="tr-save">Зберегти</button>
+        </div>
+    </div>
+
+    <!-- ── TEAM ──────────────────────────────────────────────────── -->
+    <div id="section-team" class="section">
+        <div class="breadcrumbs">Управління / Команда</div>
+        <div class="header">
+            <h1 class="page-title">Управління командою</h1>
+        </div>
+
+        <div id="team-not-admin" style="display:none;font-size:12px;color:var(--text-dim);padding:8px 0">
+            Управління командою доступне тільки адміністраторам.
+        </div>
+
+        <!-- Two-panel drag-and-drop layout -->
+        <div id="team-admin-layout" class="at-layout" style="display:none">
+
+            <!-- ── Left: users panel ───────────────────────── -->
+            <div class="at-users-panel">
+                <div class="at-panel-header">
+                    <input class="at-search" id="at-user-search" placeholder="Пошук учасника...">
+                    <button class="btn-outline" id="at-add-btn" style="width:100%;margin-top:8px;padding:7px;font-size:12px">+ Додати учасника</button>
+                </div>
+
+                <!-- Inline add-user form (slide-down) -->
+                <div class="at-add-form" id="at-add-form">
+                    <div style="font-size:12px;font-weight:600;color:var(--text-main);margin-bottom:10px">Новий учасник</div>
+                    <div style="display:flex;flex-direction:column;gap:7px">
+                        <div>
+                            <div class="label" style="margin-bottom:3px;font-size:11px">Ім'я</div>
+                            <input type="text" id="at-new-name" placeholder="Ім'я" style="font-size:12px;padding:7px 9px">
+                        </div>
+                        <div>
+                            <div class="label" style="margin-bottom:3px;font-size:11px">Email</div>
+                            <input type="email" id="at-new-email" placeholder="email@example.com" style="font-size:12px;padding:7px 9px">
+                        </div>
+                        <div>
+                            <div class="label" style="margin-bottom:3px;font-size:11px">Пароль</div>
+                            <input type="password" id="at-new-password" placeholder="••••••••" style="font-size:12px;padding:7px 9px">
+                        </div>
+                        <div>
+                            <div class="label" style="margin-bottom:3px;font-size:11px">Роль</div>
+                            <div class="select-wrapper">
+                                <select id="at-new-role" style="font-size:12px;padding:7px 9px">
+                                    <option value="user">User</option>
+                                    <option value="manager">Manager</option>
+                                    <option value="admin">Admin</option>
+                                </select>
+                                <div class="select-arrow"></div>
+                            </div>
+                        </div>
+                        <div style="display:flex;gap:6px;margin-top:4px">
+                            <button class="btn-outline" id="at-add-cancel" style="flex:1;padding:6px;font-size:11px">Скасувати</button>
+                            <button class="btn-primary action-btn" id="at-add-save" style="flex:1;padding:6px;font-size:11px">Додати</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="at-user-list"></div>
+            </div>
+
+            <!-- ── Right: profiles panel ───────────────────── -->
+            <div class="at-profiles-panel">
+                <div id="at-no-selection" style="color:var(--text-dim);font-size:13px;padding:24px 0;text-align:center">
+                    ← Виберіть користувача для управління профілями
+                </div>
+                <div id="at-profiles-content" style="display:none">
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:4px">
+                        <div style="font-size:14px;font-weight:600;color:var(--text-main)" id="at-selected-name">—</div>
+                        <input class="at-search" id="at-profile-search" placeholder="Пошук профілів..." style="width:220px">
+                    </div>
+                    <div class="at-section-label" id="at-assigned-label">ПРИЗНАЧЕНІ (0)</div>
+                    <div class="at-profiles-grid" id="at-assigned-grid"></div>
+                    <div class="at-section-label" id="at-available-label">ДОСТУПНІ (0)</div>
+                    <div class="at-profiles-grid" id="at-available-grid"></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+
+    <!-- ── AI AGENT ──────────────────────────────────────────────── -->
+    <div id="section-agent" class="section">
+        <div class="breadcrumbs">Налаштування / AI Агент</div>
+        <div class="header"><h1 class="page-title">AI Агент</h1></div>
+
+        <div id="agent-not-admin" style="display:none;font-size:13px;color:var(--text-dim);padding:8px 0">
+            Налаштування AI агента доступні тільки адміністраторам.
+        </div>
+
+        <div id="agent-admin-content">
+            <!-- Provider selector -->
+            <div style="display:flex;gap:10px;margin-bottom:20px">
+                <button type="button" class="agent-provider-btn active" data-provider="anthropic" style="display:flex;align-items:center;gap:8px;padding:10px 18px;border-radius:6px;border:1px solid var(--border-med);background:rgba(140,50,212,.12);color:#cdd6f4;cursor:pointer;font-size:13px;font-weight:500;transition:all .2s">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M13.8 4.2L11.5 10 9.2 4.2H5.5L10 14.5V20h4v-5.5L18.5 4.2z"/></svg>
+                    Anthropic Claude
+                </button>
+                <button type="button" class="agent-provider-btn" data-provider="gemini" style="display:flex;align-items:center;gap:8px;padding:10px 18px;border-radius:6px;border:1px solid var(--border-dim);background:transparent;color:var(--text-muted);cursor:pointer;font-size:13px;font-weight:500;transition:all .2s">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+                    Google Gemini
+                </button>
+            </div>
+
+            <div class="settings-grid">
+                <!-- Anthropic card -->
+                <div id="agent-card-anthropic" class="card">
+                    <div class="card-header">
+                        <div class="card-title"><span class="status-dot"></span>Anthropic API</div>
+                        <a href="https://console.anthropic.com/" target="_blank" style="font-size:11px;color:var(--text-dim)">Отримати ключ ↗</a>
+                    </div>
+                    <div class="form-group">
+                        <div class="label-row"><span class="label">API ключ</span></div>
+                        <div style="position:relative">
+                            <input type="password" id="agent-apikey" placeholder="sk-ant-…" autocomplete="off">
+                            <button type="button" id="agent-apikey-toggle" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-dim);cursor:pointer;padding:4px;font-size:11px">Показати</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="label-row"><span class="label">Модель</span></div>
+                        <div class="select-wrapper">
+                            <select id="agent-model-claude">
+                                <option value="claude-sonnet-4-6">Claude Sonnet 4.6 (рекомендовано)</option>
+                                <option value="claude-opus-4-6">Claude Opus 4.6 (потужніший)</option>
+                                <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 (швидший)</option>
+                            </select>
+                            <div class="select-arrow"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gemini card -->
+                <div id="agent-card-gemini" class="card" style="display:none">
+                    <div class="card-header">
+                        <div class="card-title"><span class="status-dot" style="background:#4285f4;box-shadow:0 0 8px rgba(66,133,244,.4)"></span>Google Gemini API</div>
+                        <a href="https://aistudio.google.com/apikey" target="_blank" style="font-size:11px;color:var(--text-dim)">Безкоштовний ключ ↗</a>
+                    </div>
+                    <div style="font-size:11px;color:#4285f4;background:rgba(66,133,244,.08);border:1px solid rgba(66,133,244,.2);border-radius:4px;padding:8px 10px;margin-bottom:12px;line-height:1.5">
+                        Gemini 2.0 Flash — <b>1500 запитів/день безкоштовно</b>. Ключ — на aistudio.google.com
+                    </div>
+                    <div class="form-group">
+                        <div class="label-row"><span class="label">API ключ (Google AI Studio)</span></div>
+                        <div style="position:relative;display:flex;gap:6px">
+                            <div style="position:relative;flex:1">
+                                <input type="password" id="agent-gemini-apikey" placeholder="AIza…" autocomplete="off">
+                                <button type="button" id="agent-gemini-toggle" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-dim);cursor:pointer;padding:4px;font-size:11px">Показати</button>
+                            </div>
+                            <button type="button" id="agent-gemini-load-models" style="padding:9px 12px;background:rgba(66,133,244,.1);border:1px solid rgba(66,133,244,.3);border-radius:4px;color:#4285f4;cursor:pointer;font-size:12px;white-space:nowrap;transition:all .2s" title="Завантажити список доступних моделей">
+                                Завантажити моделі
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="label-row">
+                            <span class="label">Модель</span>
+                            <span id="agent-gemini-model-count" style="font-size:10px;color:var(--text-dim)"></span>
+                        </div>
+                        <div class="select-wrapper">
+                            <select id="agent-model-gemini">
+                                <option value="gemini-2.0-flash">gemini-2.0-flash (рекомендовано, безкоштовно)</option>
+                                <option value="gemini-2.0-flash-lite">gemini-2.0-flash-lite (найшвидший)</option>
+                                <option value="gemini-1.5-flash">gemini-1.5-flash</option>
+                                <option value="gemini-1.5-pro">gemini-1.5-pro</option>
+                                <option value="gemini-2.5-pro-preview-03-25">gemini-2.5-pro-preview (найпотужніший)</option>
+                            </select>
+                            <div class="select-arrow"></div>
+                        </div>
+                        <div id="agent-gemini-model-desc" style="font-size:11px;color:var(--text-dim);margin-top:4px"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="action-bar">
+            <button type="button" class="action-btn btn-primary" id="agent-save">Зберегти</button>
+        </div>
+    </div>
+
+    <!-- ── VERSION / UPDATE ──────────────────────────────────────── -->
+    <div id="section-version" class="section">
+        <div class="breadcrumbs">Налаштування / Версія та Оновлення</div>
+        <div class="header"><h1 class="page-title">Версія та Оновлення</h1></div>
+
+        <!-- Current version info -->
+        <div class="card" style="margin-bottom:20px">
+            <div class="card-header"><div class="card-title">Поточна версія</div></div>
+            <div style="display:flex;align-items:center;gap:14px;padding:4px 0">
+                <img src="logo.png" alt="DEFIS" style="width:40px;height:40px;border-radius:8px;object-fit:contain">
+                <div>
+                    <div style="font-size:16px;font-weight:700;color:var(--text-main)" id="ver-current">—</div>
+                    <div style="font-size:11px;color:var(--text-muted)">DEFIS Browser</div>
+                </div>
+                <div id="ver-status-badge" style="margin-left:auto;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;background:rgba(40,200,64,.1);color:#28c840;border:1px solid rgba(40,200,64,.2)">Актуальна</div>
+            </div>
+        </div>
+
+        <!-- Latest version from server -->
+        <div class="card" style="margin-bottom:20px" id="ver-server-card">
+            <div class="card-header">
+                <div class="card-title">Остання версія на сервері</div>
+                <button type="button" class="action-btn" id="ver-check-btn" style="font-size:12px;padding:5px 12px">Перевірити</button>
+            </div>
+            <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;margin-top:4px">
+                <div>
+                    <div class="label">Версія</div>
+                    <div style="font-size:14px;font-weight:600;color:var(--text-main);margin-top:4px" id="ver-latest">—</div>
+                </div>
+                <div style="flex:1;min-width:160px">
+                    <div class="label">Завантаження</div>
+                    <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap" id="ver-dl-badges"></div>
+                </div>
+            </div>
+            <div id="ver-notes" style="font-size:12px;color:var(--text-muted);margin-top:10px;padding:10px;background:var(--bg-input);border-radius:6px;white-space:pre-wrap;display:none"></div>
+            <div style="margin-top:12px">
+                <button type="button" class="action-btn btn-primary" id="ver-download-btn" style="display:none">Завантажити оновлення</button>
+            </div>
+        </div>
+
+        <!-- Admin: publish new version -->
+        <div id="ver-admin-card" style="display:none">
+
+            <!-- Platform file uploads -->
+            <div class="card" style="margin-bottom:16px">
+                <div class="card-header">
+                    <div class="card-title">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:.7;flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        Файли релізу
+                    </div>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px" id="ver-platform-grid">
+
+                    <!-- Linux -->
+                    <div class="ver-plat-card" id="vp-linux" data-platform="linux">
+                        <input type="file" id="vf-linux" accept=".AppImage,.deb,.rpm,.zip" style="display:none">
+                        <div class="ver-drop-zone" id="vd-linux">
+                            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><ellipse cx="12" cy="5" rx="3" ry="4"/><path d="M7 9c-2 2-2 5 0 7l2 2c1 1 1 3 0 4H5M17 9c2 2 2 5 0 7l-2 2c-1 1-1 3 0 4h4"/><circle cx="8.5" cy="17.5" r=".5" fill="currentColor"/><circle cx="15.5" cy="17.5" r=".5" fill="currentColor"/></svg>
+                            <div class="ver-plat-label">Linux</div>
+                            <div class="ver-plat-hint">.AppImage / .deb / .rpm</div>
+                            <div class="ver-drop-hint">Перетягніть або клікніть</div>
+                        </div>
+                        <div class="ver-file-info" id="vi-linux" style="display:none">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#28c840" stroke-width="2.5" style="flex-shrink:0"><polyline points="20 6 9 17 4 12"/></svg>
+                            <div style="flex:1;min-width:0">
+                                <div class="ver-fname" id="vn-linux">—</div>
+                                <div class="ver-fsize" id="vs-linux">—</div>
+                            </div>
+                            <button class="ver-del-btn" id="vdel-linux" title="Видалити файл">✕</button>
+                        </div>
+                        <div class="ver-progress-wrap" id="vpr-linux" style="display:none">
+                            <div class="ver-progress-bar" id="vpb-linux"></div>
+                            <span class="ver-progress-pct" id="vpp-linux">0%</span>
+                        </div>
+                    </div>
+
+                    <!-- Windows -->
+                    <div class="ver-plat-card" id="vp-win" data-platform="win">
+                        <input type="file" id="vf-win" accept=".exe,.zip" style="display:none">
+                        <div class="ver-drop-zone" id="vd-win">
+                            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 5.5L11 4v8H3zM13 4l8-1.5V12h-8zM3 13h8v8L3 19.5zM13 13h8v6.5L13 21z"/></svg>
+                            <div class="ver-plat-label">Windows</div>
+                            <div class="ver-plat-hint">.exe / .zip</div>
+                            <div class="ver-drop-hint">Перетягніть або клікніть</div>
+                        </div>
+                        <div class="ver-file-info" id="vi-win" style="display:none">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#28c840" stroke-width="2.5" style="flex-shrink:0"><polyline points="20 6 9 17 4 12"/></svg>
+                            <div style="flex:1;min-width:0">
+                                <div class="ver-fname" id="vn-win">—</div>
+                                <div class="ver-fsize" id="vs-win">—</div>
+                            </div>
+                            <button class="ver-del-btn" id="vdel-win" title="Видалити файл">✕</button>
+                        </div>
+                        <div class="ver-progress-wrap" id="vpr-win" style="display:none">
+                            <div class="ver-progress-bar" id="vpb-win"></div>
+                            <span class="ver-progress-pct" id="vpp-win">0%</span>
+                        </div>
+                    </div>
+
+                    <!-- macOS -->
+                    <div class="ver-plat-card" id="vp-mac" data-platform="mac">
+                        <input type="file" id="vf-mac" accept=".dmg,.pkg,.zip" style="display:none">
+                        <div class="ver-drop-zone" id="vd-mac">
+                            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18.7 7.2A6 6 0 0016 6.4a5.8 5.8 0 00-4 1.6 5.8 5.8 0 00-4-1.6 6 6 0 00-2.7.8C3 8.4 2 11 2 13c0 5 4.5 9 10 9s10-4 10-9c0-2-.9-4.5-3.3-5.8z"/><path d="M12 2c0 2.5-1 4-1 4s1-1 1-4z"/></svg>
+                            <div class="ver-plat-label">macOS</div>
+                            <div class="ver-plat-hint">.dmg / .pkg</div>
+                            <div class="ver-drop-hint">Перетягніть або клікніть</div>
+                        </div>
+                        <div class="ver-file-info" id="vi-mac" style="display:none">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#28c840" stroke-width="2.5" style="flex-shrink:0"><polyline points="20 6 9 17 4 12"/></svg>
+                            <div style="flex:1;min-width:0">
+                                <div class="ver-fname" id="vn-mac">—</div>
+                                <div class="ver-fsize" id="vs-mac">—</div>
+                            </div>
+                            <button class="ver-del-btn" id="vdel-mac" title="Видалити файл">✕</button>
+                        </div>
+                        <div class="ver-progress-wrap" id="vpr-mac" style="display:none">
+                            <div class="ver-progress-bar" id="vpb-mac"></div>
+                            <span class="ver-progress-pct" id="vpp-mac">0%</span>
+                        </div>
+                    </div>
+
+                </div>
+                <div style="margin-top:10px;font-size:11px;color:var(--text-dim)">Перетягніть файли або клікніть на зону. Максимум 500 МБ на файл.</div>
+            </div>
+
+            <!-- Version metadata + publish -->
+            <div class="card">
+                <div class="card-header"><div class="card-title">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:.7;flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    Мета-дані релізу
+                </div></div>
+
+                <div style="display:grid;grid-template-columns:160px 1fr;gap:12px;margin-bottom:14px;align-items:end">
+                    <div class="form-group" style="margin:0">
+                        <span class="label">Версія (x.y.z) *</span>
+                        <input type="text" class="form-input" id="ver-new-version" placeholder="1.2.0" style="margin-top:6px">
+                    </div>
+                    <label class="form-check" style="margin:0;padding-bottom:8px">
+                        <input type="checkbox" id="ver-force-update">
+                        <span>Примусове оновлення</span>
+                    </label>
+                </div>
+
+                <div class="form-group" style="margin-bottom:16px">
+                    <span class="label">Що нового (release notes)</span>
+                    <textarea class="form-input" id="ver-new-notes" rows="5"
+                        placeholder="• Додано нову функцію X&#10;• Виправлено баг з Y&#10;• Покращена продуктивність"
+                        style="resize:vertical;font-family:inherit;margin-top:6px"></textarea>
+                </div>
+
+                <div style="display:flex;align-items:center;gap:12px">
+                    <button type="button" class="action-btn btn-primary" id="ver-publish-btn">Опублікувати версію</button>
+                    <span id="ver-publish-status" style="font-size:12px;color:var(--text-muted)"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</main>
+
+<!-- Toast container -->
+<div id="s-toast"></div>
+
+<script>
+// ── Toast ────────────────────────────────────────────────────────
+function toast(msg, type = 'info', dur = 3500) {
+    const el = document.createElement('div');
+    el.className = `s-toast-item ${type}`;
+    el.textContent = msg;
+    document.getElementById('s-toast').appendChild(el);
+    setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .3s'; setTimeout(() => el.remove(), 300); }, dur);
+}
+
+// ── Section navigation ────────────────────────────────────────────
+const navItems = document.querySelectorAll('.nav-item[data-section]');
+navItems.forEach(item => {
+    item.addEventListener('click', e => {
+        e.preventDefault();
+        const section = item.dataset.section;
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.getElementById('section-' + section)?.classList.add('active');
+        navItems.forEach(n => n.classList.toggle('active', n.dataset.section === section));
+        // Refresh data for sections
+        if (section === 'overview')       renderOverview();
+        if (section === 'proxy')          renderProxySection();
+        if (section === 'configuration')  renderConfig();
+        if (section === 'team')           renderTeam();
+    });
+});
+
+// ── State ─────────────────────────────────────────────────────────
+let profiles      = [];
+let currentProf   = null;
+let globalConfig  = {};
+let currentUser   = null;
+
+const ROLE_LABELS_SIDEBAR = { admin: 'Адміністратор', manager: 'Менеджер', user: 'Користувач' };
+
+function renderSidebarUser(user) {
+    if (!user) return;
+    const nameEl   = document.getElementById('sidebar-uname');
+    const roleEl   = document.getElementById('sidebar-urole');
+    const avatarEl = document.getElementById('sidebar-avatar');
+    const initials = (user.name || user.email || '?').trim().split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
+    if (nameEl)   nameEl.textContent   = user.name || user.email || '—';
+    if (roleEl)   roleEl.textContent   = ROLE_LABELS_SIDEBAR[user.role] || user.role || '';
+    if (avatarEl) avatarEl.textContent = initials;
+}
+
+// ── Logout ────────────────────────────────────────────────────────
+document.getElementById('sidebar-logout-btn')?.addEventListener('click', async () => {
+    const btn = document.getElementById('sidebar-logout-btn');
+    btn.disabled = true;
+    btn.querySelector('svg').style.opacity = '0.4';
+    await window.settingsApi.logout().catch(() => {});
+    // window will be closed by main process — nothing more to do
+});
+
+// ── Init ──────────────────────────────────────────────────────────
+async function init() {
+    try {
+        [profiles, currentProf, globalConfig, currentUser] = await Promise.all([
+            window.settingsApi.getProfiles(),
+            window.settingsApi.getInitProfile(),
+            window.settingsApi.getConfig(),
+            window.settingsApi.getCurrentUser().catch(() => null),
+        ]);
+    } catch(e) {
+        console.error('Settings init error:', e);
+        toast('Помилка завантаження даних', 'error');
+        return;
+    }
+
+    renderSidebarUser(currentUser);
+    buildProfilePicker();
+    populateProfileForm(currentProf);
+    renderOverview();
+    renderConfig();
+}
+
+// ── Profile picker ────────────────────────────────────────────────
+function buildProfilePicker() {
+    const sel = document.getElementById('pp-select');
+    sel.innerHTML = '';
+    profiles.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        opt.textContent = p.name;
+        if (p.id === currentProf?.id) opt.selected = true;
+        sel.appendChild(opt);
+    });
+    sel.addEventListener('change', () => {
+        const p = profiles.find(x => x.id === sel.value);
+        if (p) { currentProf = p; populateProfileForm(p); }
+    });
+    updatePickerDot(currentProf?.color);
+}
+
+function updatePickerDot(color) {
+    document.getElementById('pp-dot').style.background = color || '#9d7cce';
+}
+
+// ── Populate profile form ─────────────────────────────────────────
+let _snapshot = null; // for reset
+
+function populateProfileForm(p) {
+    if (!p) return;
+    document.getElementById('pp-select').value   = p.id;
+    document.getElementById('s-name').value      = p.name || '';
+    document.getElementById('s-number').value   = p.number != null ? p.number : '';
+    document.getElementById('s-os').value        = p.os || 'win11';
+    document.getElementById('s-bv').value        = p.browserVersion || 'chrome120';
+
+    const proxy = p.proxy || {};
+    const isDirect = !proxy.enabled;
+    document.getElementById('s-proxy-type').value = isDirect ? 'direct' : (proxy.protocol || 'http');
+    document.getElementById('s-proxy-host').value = proxy.host || '';
+    document.getElementById('s-proxy-port').value = proxy.port || '';
+    document.getElementById('s-proxy-user').value = proxy.user || '';
+    document.getElementById('s-proxy-pass').value = proxy.pass || '';
+    document.getElementById('s-webrtc').checked   = true; // always on
+
+    const fp = p.fingerprint || {};
+    document.getElementById('s-canvas').checked   = fp.canvas !== false;
+    document.getElementById('s-webgl').checked    = fp.webgl  !== false;
+    document.getElementById('s-audio').checked    = fp.audioContext !== false;
+    document.getElementById('s-geo').checked      = fp.geolocation !== false;
+    document.getElementById('s-tz').value         = p.timezone || 'auto';
+    document.getElementById('s-tz-value').value   = p.timezoneValue || 'Europe/Kyiv';
+    document.getElementById('s-dnt').checked      = !!p.dnt;
+    document.getElementById('s-fonts').checked    = p.fonts !== false;
+
+    updatePickerDot(p.color);
+    updateProxyFieldsVisibility();
+    updateTzValueVisibility();
+    resetProxyStatus();
+    renderExtList(p.plugins?.extensions || []);
+    document.getElementById('ext-install-status').textContent = '';
+
+    _snapshot = JSON.parse(JSON.stringify(p));
+}
+
+// ── Proxy fields visibility ───────────────────────────────────────
+function updateProxyFieldsVisibility() {
+    const isDirect = document.getElementById('s-proxy-type').value === 'direct';
+    ['s-proxy-host-row', 's-proxy-port-row', 's-proxy-creds-row', 's-proxy-test-row'].forEach(id => {
+        document.getElementById(id).style.display = isDirect ? 'none' : '';
+    });
+}
+
+document.getElementById('s-proxy-type').addEventListener('change', updateProxyFieldsVisibility);
+
+// ── Timezone value row visibility ─────────────────────────────────
+function updateTzValueVisibility() {
+    const isManual = document.getElementById('s-tz').value === 'manual';
+    document.getElementById('s-tz-value-row').style.display = isManual ? '' : 'none';
+}
+document.getElementById('s-tz').addEventListener('change', updateTzValueVisibility);
+
+// ── Proxy test ────────────────────────────────────────────────────
+function resetProxyStatus() {
+    const dot   = document.getElementById('s-proxy-dot');
+    const label = document.getElementById('s-proxy-label');
+    dot.style.background = '#444';
+    label.textContent    = '—';
+}
+
+document.getElementById('s-proxy-test-btn').addEventListener('click', async () => {
+    if (!currentProf) return;
+    const dot   = document.getElementById('s-proxy-dot');
+    const label = document.getElementById('s-proxy-label');
+    const btn   = document.getElementById('s-proxy-test-btn');
+    dot.style.background = '#f59e0b';
+    label.textContent    = 'Перевірка…';
+    btn.disabled         = true;
+    const res = await window.settingsApi.checkProxy(currentProf.id);
+    if (res.ok && !res.direct) {
+        dot.style.background = '#28c840';
+        label.textContent    = `OK — IP: ${res.ip}`;
+    } else if (res.direct) {
+        dot.style.background = '#444';
+        label.textContent    = 'Без проксі';
+    } else {
+        dot.style.background = '#e81123';
+        label.textContent    = `Помилка: ${res.error}`;
+    }
+    btn.disabled = false;
+});
+
+// ── Reset ─────────────────────────────────────────────────────────
+document.getElementById('s-reset').addEventListener('click', () => {
+    if (_snapshot) populateProfileForm(_snapshot);
+    toast('Зміни скинуто', 'info');
+});
+
+// ── Save profile ──────────────────────────────────────────────────
+document.getElementById('s-save').addEventListener('click', async () => {
+    if (!currentProf) return;
+    const name = document.getElementById('s-name').value.trim();
+    if (!name) { toast('Введіть назву профілю', 'error'); return; }
+
+    const proxyType = document.getElementById('s-proxy-type').value;
+    const isDirect  = proxyType === 'direct';
+
+    const rawNumber = document.getElementById('s-number').value.trim();
+    const data = {
+        id:     currentProf.id,
+        name,
+        number: rawNumber !== '' ? parseInt(rawNumber) : null,
+        color:  currentProf.color,
+        os:     document.getElementById('s-os').value,
+        browserVersion: document.getElementById('s-bv').value,
+        proxy: {
+            enabled:  !isDirect,
+            protocol: isDirect ? 'http' : proxyType,
+            host:     document.getElementById('s-proxy-host').value.trim(),
+            port:     document.getElementById('s-proxy-port').value.trim(),
+            user:     document.getElementById('s-proxy-user').value.trim(),
+            pass:     document.getElementById('s-proxy-pass').value,
+        },
+        fingerprint: {
+            canvas:       document.getElementById('s-canvas').checked,
+            webgl:        document.getElementById('s-webgl').checked,
+            audioContext: document.getElementById('s-audio').checked,
+            geolocation:  document.getElementById('s-geo').checked,
+        },
+        timezone:      document.getElementById('s-tz').value,
+        timezoneValue: document.getElementById('s-tz-value').value,
+        dnt:           document.getElementById('s-dnt').checked,
+        fonts:         document.getElementById('s-fonts').checked,
+    };
+
+    try {
+        const updated = await window.settingsApi.updateProfile(data);
+        if (updated) {
+            // Refresh local state
+            const idx = profiles.findIndex(p => p.id === updated.id);
+            if (idx >= 0) profiles[idx] = updated;
+            currentProf = updated;
+            _snapshot   = JSON.parse(JSON.stringify(updated));
+            renderExtList(updated.plugins?.extensions || []);
+            toast('Профіль збережено', 'success');
+        }
+    } catch(e) {
+        toast('Помилка збереження', 'error');
+    }
+});
+
+// ── Overview ──────────────────────────────────────────────────────
+function renderOverview() {
+    document.getElementById('ov-total').textContent = profiles.length;
+    document.getElementById('ov-proxy').textContent = profiles.filter(p => p.proxy?.enabled).length;
+
+    const list = document.getElementById('ov-profiles-list');
+    list.innerHTML = '';
+    profiles.forEach(p => {
+        const row = document.createElement('div');
+        row.className = 'data-table-row';
+        row.style.gridTemplateColumns = '60px 2fr 1fr 2fr 1fr';
+        const osLabels = { win11: 'Win 11', win10: 'Win 10', macos: 'macOS', linux: 'Linux' };
+        const proxyText = p.proxy?.enabled ? `${p.proxy.protocol?.toUpperCase()} ${p.proxy.host}:${p.proxy.port}` : 'Прямий';
+        const fpOn = p.fingerprint ? Object.values(p.fingerprint).filter(Boolean).length : 4;
+        const numBadge = p.number != null
+            ? `<span class="tag" style="border-color:var(--accent);color:var(--accent)">${p.number}</span>`
+            : `<span style="color:var(--text-dim)">—</span>`;
+        row.innerHTML = `
+            <div style="text-align:center">${numBadge}</div>
+            <div style="display:flex;align-items:center;gap:8px">
+                <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${p.color||'#9d7cce'}"></span>
+                <span style="color:var(--text-main)">${p.name}</span>
+            </div>
+            <div style="color:var(--text-muted)">${osLabels[p.os||'win11']||'Win 11'}</div>
+            <div style="font-family:var(--font-mono);color:var(--text-muted)">${proxyText}</div>
+            <div><span class="tag">${fpOn}/4</span></div>`;
+        list.appendChild(row);
+    });
+}
+
+// ── Proxy section ─────────────────────────────────────────────────
+function renderProxySection() {
+    const list = document.getElementById('proxy-profiles-list');
+    list.innerHTML = '';
+    const withProxy = profiles.filter(p => p.proxy?.enabled);
+    if (!withProxy.length) {
+        list.innerHTML = '<div style="color:var(--text-muted);font-size:12px;padding:8px 0">Жоден профіль не використовує проксі</div>';
+        return;
+    }
+    withProxy.forEach(p => {
+        const item = document.createElement('div');
+        item.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--bg-input);border:1px solid var(--border-dim);border-radius:4px';
+        item.innerHTML = `
+            <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${p.color||'#9d7cce'};flex-shrink:0"></span>
+            <div style="flex:1">
+                <div style="font-size:13px;color:var(--text-main)">${p.name}</div>
+                <div style="font-size:11px;color:var(--text-muted);font-family:var(--font-mono)">${p.proxy.protocol?.toUpperCase()} ${p.proxy.host}:${p.proxy.port}</div>
+            </div>
+            <button class="btn-outline" data-test-proxy="${p.id}">Перевірити</button>
+            <span class="proxy-dot-lg" id="pdot-${p.id}"></span>
+            <span style="font-size:11px;color:var(--text-muted);min-width:120px" id="plabel-${p.id}">—</span>`;
+        list.appendChild(item);
+    });
+
+    list.querySelectorAll('[data-test-proxy]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const id    = btn.dataset.testProxy;
+            const dot   = document.getElementById(`pdot-${id}`);
+            const label = document.getElementById(`plabel-${id}`);
+            dot.style.background = '#f59e0b';
+            label.textContent    = 'Перевірка…';
+            btn.disabled         = true;
+            const res = await window.settingsApi.checkProxy(id);
+            dot.style.background = res.ok && !res.direct ? '#28c840' : '#e81123';
+            label.textContent    = res.ok && !res.direct ? `OK — IP: ${res.ip}` : `Помилка: ${res.error}`;
+            btn.disabled = false;
+        });
+    });
+}
+
+// ── Configuration ─────────────────────────────────────────────────
+async function renderConfig() {
+    document.getElementById('c-rotate').checked        = !!globalConfig.autoRotateFingerprint;
+    document.getElementById('c-clear').checked         = !!globalConfig.clearOnSessionEnd;
+    document.getElementById('c-protection').value      = globalConfig.protectionLevel || 'high';
+    document.getElementById('c-confirm-close').checked = !!globalConfig.confirmClose;
+    const devmodeOn = !!globalConfig.devMode;
+    document.getElementById('c-devmode').checked = devmodeOn;
+    document.getElementById('devmode-dot').classList.toggle('inactive', !devmodeOn);
+    try {
+        const url = await window.settingsApi.getServerUrl();
+        document.getElementById('c-server-url').value = url || 'http://188.137.178.124:3717';
+    } catch {}
+}
+
+document.getElementById('c-devmode').addEventListener('change', function() {
+    document.getElementById('devmode-dot').classList.toggle('inactive', !this.checked);
+});
+
+document.getElementById('c-save').addEventListener('click', async () => {
+    const data = {
+        autoRotateFingerprint: document.getElementById('c-rotate').checked,
+        clearOnSessionEnd:     document.getElementById('c-clear').checked,
+        protectionLevel:       document.getElementById('c-protection').value,
+        confirmClose:          document.getElementById('c-confirm-close').checked,
+        devMode:               document.getElementById('c-devmode').checked,
+    };
+    try {
+        globalConfig = await window.settingsApi.saveConfig(data);
+        // Save server URL if changed
+        const serverUrl = document.getElementById('c-server-url').value.trim();
+        if (serverUrl) await window.settingsApi.saveServerUrl(serverUrl);
+        toast('Конфігурацію збережено', 'success');
+    } catch(e) {
+        toast('Помилка збереження', 'error');
+    }
+});
+
+// ── Translator ────────────────────────────────────────────────────
+function renderTranslator() {
+    const t = globalConfig.translator || {};
+    document.getElementById('tr-enabled').checked     = !!t.enabled;
+    document.getElementById('tr-source').value        = t.sourceLang || 'auto';
+    document.getElementById('tr-target').value        = t.targetLang || 'uk';
+    document.getElementById('tr-shortcut').value      = t.shortcut   || '';
+}
+
+// ── Shortcut recorder ─────────────────────────────────────────────
+(function() {
+    const inp = document.getElementById('tr-shortcut');
+    inp.addEventListener('focus', () => { inp.value = ''; inp.placeholder = 'Введіть комбінацію…'; });
+    inp.addEventListener('keydown', (e) => {
+        e.preventDefault(); e.stopPropagation();
+        const k = e.key;
+        if (['Control','Alt','Shift','Meta'].includes(k)) return;
+        const parts = [];
+        if (e.ctrlKey)  parts.push('Ctrl');
+        if (e.altKey)   parts.push('Alt');
+        if (e.shiftKey) parts.push('Shift');
+        if (e.metaKey)  parts.push('Meta');
+        parts.push(k.length === 1 ? k.toUpperCase() : k);
+        inp.value = parts.join('+');
+        inp.blur();
+    });
+    inp.addEventListener('blur', () => { inp.placeholder = 'Натисніть для запису…'; });
+    document.getElementById('tr-shortcut-clear').addEventListener('click', () => { inp.value = ''; });
+})();
+
+document.getElementById('tr-save').addEventListener('click', async () => {
+    const data = Object.assign({}, globalConfig, {
+        translator: {
+            enabled:    document.getElementById('tr-enabled').checked,
+            sourceLang: document.getElementById('tr-source').value,
+            targetLang: document.getElementById('tr-target').value,
+            shortcut:   document.getElementById('tr-shortcut').value,
+        },
+    });
+    try {
+        globalConfig = await window.settingsApi.saveConfig(data);
+        toast('Налаштування перекладача збережено', 'success');
+    } catch {
+        toast('Помилка збереження', 'error');
+    }
+});
+
+// hook renderTranslator into section switch
+const _origNavClick = document.querySelectorAll('.nav-item[data-section]');
+_origNavClick.forEach(item => {
+    if (item.dataset.section === 'translator') {
+        item.addEventListener('click', renderTranslator);
+    }
+});
+
+// ── Team (drag-and-drop profile assignment) ───────────────────────
+const ROLE_LABELS   = { admin: 'Адмін', manager: 'Менеджер', user: 'Користувач' };
+const AVATAR_COLORS = ['#8c32d4','#2196F3','#28c840','#f59e0b','#e91e63','#00bcd4'];
+
+let atUsers      = [];  // { id, email, name, role, is_active, profileIds[] }
+let atProfiles   = [];  // all profiles
+let atSelected   = null; // userId currently selected
+let atFilter     = '';   // profile search query
+let atUserSearch = '';   // user search query
+
+function atInitials(u) {
+    const n = (u.name || u.email || '?').trim();
+    return n.split(/[\s@._-]+/).slice(0, 2).map(w => w[0]?.toUpperCase() || '').join('') || '?';
+}
+function atAvatarColor(u) { return AVATAR_COLORS[u.id % AVATAR_COLORS.length]; }
+
+async function renderTeam() {
+    const notAdmin = document.getElementById('team-not-admin');
+    const layout   = document.getElementById('team-admin-layout');
+    try {
+        [atUsers, atProfiles] = await Promise.all([
+            window.settingsApi.adminGetUsers(),
+            window.settingsApi.getProfiles(),
+        ]);
+        notAdmin.style.display = 'none';
+        layout.style.display   = 'flex';
+        renderUserList();
+        renderProfilesPanel();
+    } catch {
+        notAdmin.style.display = '';
+        layout.style.display   = 'none';
+    }
+}
+
+function renderUserList() {
+    const container = document.getElementById('at-user-list');
+    container.innerHTML = '';
+    const q        = atUserSearch.toLowerCase();
+    const filtered = atUsers.filter(u =>
+        !q || (u.name || '').toLowerCase().includes(q) || u.email.toLowerCase().includes(q)
+    );
+    if (!filtered.length) {
+        container.innerHTML = '<div class="at-empty" style="padding:12px 14px">Не знайдено</div>';
+        return;
+    }
+    filtered.forEach(u => {
+        const card   = document.createElement('div');
+        const ac     = atAvatarColor(u);
+        const roleColor = u.role === 'admin' ? 'var(--accent)' : (u.role === 'manager' ? '#2196F3' : 'var(--text-dim)');
+        card.className = 'at-user-card' + (u.id === atSelected ? ' selected' : '');
+        card.dataset.userId = u.id;
+        card.innerHTML = `
+            <div class="at-avatar" style="background:${ac}22;color:${ac};border-color:${ac}44">${atInitials(u)}</div>
+            <div class="at-user-info">
+                <div class="at-user-name">${u.name || u.email}</div>
+                <div class="at-user-meta" style="color:${roleColor}">${ROLE_LABELS[u.role] || u.role}</div>
+            </div>
+            <span class="at-count-badge" title="Призначених профілів">${(u.profileIds || []).length}</span>
+            ${u.role !== 'admin' ? `<button class="at-del-btn" data-del-user="${u.id}" title="Видалити користувача">×</button>` : ''}`;
+
+        // drag-over: drop profile onto user card to assign
+        card.addEventListener('dragover', e => { e.preventDefault(); card.classList.add('drag-over'); });
+        card.addEventListener('dragleave', e => { if (!card.contains(e.relatedTarget)) card.classList.remove('drag-over'); });
+        card.addEventListener('drop', e => {
+            e.preventDefault();
+            card.classList.remove('drag-over');
+            const pid = e.dataTransfer.getData('text/plain');
+            if (!pid) return;
+            const uid  = parseInt(card.dataset.userId);
+            const user = atUsers.find(x => x.id === uid);
+            if (user && !(user.profileIds || []).includes(pid)) toggleProfile(uid, pid);
+        });
+
+        // click: select user
+        card.addEventListener('click', e => {
+            if (e.target.dataset.delUser) return;
+            atSelected = u.id;
+            renderUserList();
+            renderProfilesPanel();
+        });
+
+        container.appendChild(card);
+    });
+
+    // delete user buttons
+    container.querySelectorAll('[data-del-user]').forEach(btn => {
+        btn.addEventListener('click', async e => {
+            e.stopPropagation();
+            if (!confirm('Видалити цього користувача?')) return;
+            const id = parseInt(btn.dataset.delUser);
+            const ok = await window.settingsApi.adminDeleteUser(id);
+            if (ok) {
+                toast('Користувача видалено', 'success');
+                if (atSelected === id) atSelected = null;
+                renderTeam();
+            } else {
+                toast('Помилка видалення', 'error');
+            }
+        });
+    });
+}
+
+function renderProfilesPanel() {
+    const noSel  = document.getElementById('at-no-selection');
+    const content = document.getElementById('at-profiles-content');
+    if (!atSelected) {
+        noSel.style.display   = '';
+        content.style.display = 'none';
+        return;
+    }
+    const user = atUsers.find(u => u.id === atSelected);
+    if (!user) return;
+    noSel.style.display   = 'none';
+    content.style.display = '';
+    document.getElementById('at-selected-name').textContent = user.name || user.email;
+
+    const q           = atFilter.toLowerCase();
+    const assignedSet = new Set(user.profileIds || []);
+    const assigned    = atProfiles.filter(p => assignedSet.has(p.id)  && (!q || p.name.toLowerCase().includes(q)));
+    const available   = atProfiles.filter(p => !assignedSet.has(p.id) && (!q || p.name.toLowerCase().includes(q)));
+
+    document.getElementById('at-assigned-label').textContent  = `ПРИЗНАЧЕНІ (${assignedSet.size})`;
+    document.getElementById('at-available-label').textContent = `ДОСТУПНІ (${atProfiles.length - assignedSet.size})`;
+
+    renderChips('at-assigned-grid',  assigned,  true,  user.id);
+    renderChips('at-available-grid', available, false, user.id);
+}
+
+function renderChips(containerId, profs, isAssigned, userId) {
+    const grid = document.getElementById(containerId);
+    grid.innerHTML = '';
+    if (!profs.length) {
+        grid.innerHTML = `<div class="at-empty">${isAssigned ? 'Немає призначених профілів' : 'Немає доступних профілів'}</div>`;
+        return;
+    }
+    profs.forEach(p => {
+        const chip = document.createElement('div');
+        chip.className   = 'at-profile-chip' + (isAssigned ? ' assigned' : '');
+        chip.draggable   = !isAssigned;
+        chip.dataset.pid = p.id;
+        chip.innerHTML   = `
+            <span class="at-chip-dot" style="background:${p.color || '#9d7cce'}"></span>
+            ${p.number != null ? `<span class="at-chip-num">#${p.number}</span>` : ''}
+            <span>${p.name}</span>
+            ${isAssigned ? `<span class="at-chip-x" data-chip-x="${p.id}" title="Зняти">×</span>` : ''}`;
+
+        if (!isAssigned) {
+            chip.addEventListener('dragstart', e => {
+                e.dataTransfer.setData('text/plain', p.id);
+                e.dataTransfer.effectAllowed = 'copy';
+                chip.classList.add('drag-active');
+            });
+            chip.addEventListener('dragend', () => chip.classList.remove('drag-active'));
+        }
+
+        // click chip = toggle
+        chip.addEventListener('click', e => {
+            if (e.target.dataset.chipX) return;
+            toggleProfile(userId, p.id);
+        });
+
+        grid.appendChild(chip);
+    });
+
+    // × remove button
+    grid.querySelectorAll('[data-chip-x]').forEach(btn => {
+        btn.addEventListener('click', e => {
+            e.stopPropagation();
+            toggleProfile(userId, btn.dataset.chipX);
+        });
+    });
+}
+
+async function toggleProfile(userId, profileId) {
+    const user = atUsers.find(u => u.id === userId);
+    if (!user) return;
+    const has    = (user.profileIds || []).includes(profileId);
+    const newIds = has
+        ? user.profileIds.filter(id => id !== profileId)
+        : [...(user.profileIds || []), profileId];
+    try {
+        await window.settingsApi.adminAssignProfiles({ userId, profileIds: newIds });
+        user.profileIds = newIds;
+        renderUserList();
+        renderProfilesPanel();
+    } catch {
+        toast('Помилка збереження', 'error');
+    }
+}
+
+// Team: add-user form slide-down
+document.getElementById('at-add-btn').addEventListener('click', () => {
+    document.getElementById('at-add-form').classList.add('open');
+});
+document.getElementById('at-add-cancel').addEventListener('click', () => {
+    document.getElementById('at-add-form').classList.remove('open');
+});
+document.getElementById('at-add-save').addEventListener('click', async () => {
+    const email    = document.getElementById('at-new-email').value.trim();
+    const password = document.getElementById('at-new-password').value;
+    const name     = document.getElementById('at-new-name').value.trim();
+    const role     = document.getElementById('at-new-role').value;
+    if (!email || !password) { toast('Введіть email та пароль', 'error'); return; }
+    const result = await window.settingsApi.adminCreateUser({ email, password, name, role });
+    if (result.ok) {
+        toast('Користувача додано', 'success');
+        document.getElementById('at-add-form').classList.remove('open');
+        ['at-new-email', 'at-new-password', 'at-new-name'].forEach(id => document.getElementById(id).value = '');
+        renderTeam();
+    } else {
+        toast(`Помилка: ${result.error}`, 'error');
+    }
+});
+
+// Team: search filters
+document.getElementById('at-user-search').addEventListener('input', e => {
+    atUserSearch = e.target.value;
+    renderUserList();
+});
+document.getElementById('at-profile-search').addEventListener('input', e => {
+    atFilter = e.target.value;
+    renderProfilesPanel();
+});
+
+// ── Chrome Extensions ─────────────────────────────────────────────
+
+// Extract extension ID from CWS URL or plain ID
+function parseExtId(raw) {
+    raw = raw.trim();
+    // URL: https://chromewebstore.google.com/detail/name/EXTENSION_ID
+    const m = raw.match(/\/detail\/[^/]+\/([a-z]{32})/i) || raw.match(/\/([a-z]{32})(?:\?|$)/i);
+    if (m) return m[1].toLowerCase();
+    // Plain ID
+    if (/^[a-z]{32}$/i.test(raw)) return raw.toLowerCase();
+    return null;
+}
+
+function renderExtList(extensions) {
+    const list = document.getElementById('ext-list');
+    list.innerHTML = '';
+    if (!extensions || extensions.length === 0) {
+        list.innerHTML = '<div style="font-size:12px;color:var(--text-dim)">Жодного розширення не встановлено</div>';
+        return;
+    }
+    extensions.forEach(ext => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg-input);border:1px solid var(--border-dim);border-radius:4px';
+        row.innerHTML = `
+            <div style="flex:1;min-width:0">
+                <div style="color:var(--text-main);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ext.name || ext.id}</div>
+                <div style="color:var(--text-dim);font-size:11px;font-family:var(--font-mono)">${ext.id}</div>
+            </div>
+            <label class="switch" title="Увімкнути/вимкнути">
+                <input type="checkbox" class="ext-toggle-cb" data-ext-id="${ext.id}" ${ext.enabled ? 'checked' : ''}>
+                <span class="slider"></span>
+            </label>
+            <button class="btn-danger" data-ext-remove="${ext.id}" style="padding:4px 8px;font-size:11px;white-space:nowrap">Видалити</button>`;
+        list.appendChild(row);
+    });
+
+    list.querySelectorAll('.ext-toggle-cb').forEach(cb => {
+        cb.addEventListener('change', async () => {
+            const res = await window.settingsApi.extToggle({
+                profileId:   currentProf.id,
+                extensionId: cb.dataset.extId,
+                enabled:     cb.checked,
+            });
+            if (!res.ok) { cb.checked = !cb.checked; toast('Помилка оновлення', 'error'); }
+            else {
+                const idx = currentProf.plugins?.extensions?.findIndex(e => e.id === cb.dataset.extId);
+                if (idx >= 0) currentProf.plugins.extensions[idx].enabled = cb.checked;
+            }
+        });
+    });
+
+    list.querySelectorAll('[data-ext-remove]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            if (!confirm(`Видалити розширення ${btn.dataset.extRemove}?`)) return;
+            const res = await window.settingsApi.extRemove({
+                profileId:   currentProf.id,
+                extensionId: btn.dataset.extRemove,
+            });
+            if (res.ok) {
+                if (currentProf.plugins?.extensions)
+                    currentProf.plugins.extensions = currentProf.plugins.extensions.filter(e => e.id !== btn.dataset.extRemove);
+                renderExtList(currentProf.plugins?.extensions || []);
+                toast('Розширення видалено', 'success');
+            } else {
+                toast('Помилка видалення', 'error');
+            }
+        });
+    });
+}
+
+document.getElementById('ext-install-btn').addEventListener('click', async () => {
+    if (!currentProf) return;
+    const raw    = document.getElementById('ext-input').value;
+    const extId  = parseExtId(raw);
+    const status = document.getElementById('ext-install-status');
+
+    if (!extId) { toast('Невірний ID або посилання', 'error'); return; }
+
+    const btn = document.getElementById('ext-install-btn');
+    btn.disabled    = true;
+    status.style.color = 'var(--text-muted)';
+    status.textContent = `Завантаження ${extId}…`;
+
+    const res = await window.settingsApi.extInstall({ profileId: currentProf.id, extensionId: extId });
+    btn.disabled = false;
+
+    if (res.ok) {
+        status.style.color = '#28c840';
+        status.textContent = `✓ Встановлено: ${res.name}${res.cached ? ' (з кешу)' : ''}`;
+        document.getElementById('ext-input').value = '';
+        if (!currentProf.plugins) currentProf.plugins = {};
+        if (!currentProf.plugins.extensions) currentProf.plugins.extensions = [];
+        if (!currentProf.plugins.extensions.find(e => e.id === extId)) {
+            currentProf.plugins.extensions.push({ id: extId, name: res.name, enabled: true });
+        }
+        renderExtList(currentProf.plugins.extensions);
+    } else {
+        status.style.color = '#ff6b6b';
+        status.textContent = `✗ Помилка: ${res.error}`;
+    }
+});
+
+// ── Quick WallChain install ────────────────────────────────────────
+document.getElementById('ext-quick-wallchain').addEventListener('click', () => {
+    document.getElementById('ext-input').value = 'hmkmpdakcjpihbpfolonciflbkjkojdb';
+    document.getElementById('ext-install-btn').click();
+});
+
+// ── Import from Chrome modal ───────────────────────────────────────
+const chromeImportModal = document.getElementById('chrome-import-modal');
+const chromeImportList  = document.getElementById('chrome-import-list');
+
+function openChromeImportModal() {
+    chromeImportModal.classList.add('open');
+    chromeImportList.innerHTML = '<div id="chrome-import-empty">Сканування Chrome…</div>';
+    window.settingsApi.extScanChrome().then(exts => {
+        chromeImportList.innerHTML = '';
+        if (!exts || !exts.length) {
+            chromeImportList.innerHTML = '<div id="chrome-import-empty">Розширень Chrome не знайдено.<br>Переконайтесь що Chrome встановлений.</div>';
+            return;
+        }
+        // Filter out already-installed ones
+        const installedIds = new Set((currentProf?.plugins?.extensions || []).map(e => e.id));
+        exts.forEach(ext => {
+            const row = document.createElement('div');
+            row.className = 'chrome-ext-row';
+            const iconHtml = ext.icon
+                ? `<img class="chrome-ext-icon" src="${ext.icon}" alt="">`
+                : `<div class="chrome-ext-icon" style="display:flex;align-items:center;justify-content:center;color:#555"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:18px;height:18px"><path stroke-linecap="round" stroke-linejoin="round" d="M9 3v1.5a1.5 1.5 0 003 0V3h6v4h1.5a1.5 1.5 0 010 3H18v5h-1.5a1.5 1.5 0 000 3H18v3h-6v-1.5a1.5 1.5 0 00-3 0V21H3v-6h1.5a1.5 1.5 0 000-3H3V6h6V3z"/></svg></div>`;
+            const alreadyIn = installedIds.has(ext.id);
+            row.innerHTML = `
+                ${iconHtml}
+                <div class="chrome-ext-info">
+                    <div class="chrome-ext-name">${ext.name}</div>
+                    <div class="chrome-ext-id">${ext.id}</div>
+                </div>
+                <button class="btn-outline chrome-ext-btn" ${alreadyIn ? 'disabled style="opacity:.4"' : ''}>
+                    ${alreadyIn ? '✓ Вже є' : 'Імпорт'}
+                </button>`;
+            const btn = row.querySelector('.chrome-ext-btn');
+            if (!alreadyIn) {
+                btn.addEventListener('click', async () => {
+                    if (!currentProf) return;
+                    btn.disabled = true;
+                    btn.textContent = '…';
+                    const res = await window.settingsApi.extInstallFromLocal({
+                        profileId: currentProf.id,
+                        extensionId: ext.id,
+                        sourceDir: ext.sourceDir,
+                    });
+                    if (res.ok) {
+                        btn.textContent = '✓ Імпортовано';
+                        btn.style.color = '#28c840';
+                        installedIds.add(ext.id);
+                        if (!currentProf.plugins) currentProf.plugins = {};
+                        if (!currentProf.plugins.extensions) currentProf.plugins.extensions = [];
+                        if (!currentProf.plugins.extensions.find(e => e.id === ext.id))
+                            currentProf.plugins.extensions.push({ id: ext.id, name: res.name, enabled: true });
+                        renderExtList(currentProf.plugins.extensions);
+                    } else {
+                        btn.disabled = false;
+                        btn.textContent = 'Помилка';
+                        btn.style.color = '#ff6b6b';
+                        toast(`Помилка: ${res.error}`, 'error');
+                    }
+                });
+            }
+            chromeImportList.appendChild(row);
+        });
+    }).catch(e => {
+        chromeImportList.innerHTML = `<div id="chrome-import-empty">Помилка: ${e.message}</div>`;
+    });
+}
+
+document.getElementById('ext-import-chrome-btn').addEventListener('click', openChromeImportModal);
+document.getElementById('chrome-import-close').addEventListener('click', () => chromeImportModal.classList.remove('open'));
+chromeImportModal.addEventListener('click', e => { if (e.target === chromeImportModal) chromeImportModal.classList.remove('open'); });
+
+// ── AI Agent ──────────────────────────────────────────────────────
+let agentProvider = 'anthropic'; // current selected provider
+
+function setAgentProvider(provider) {
+    agentProvider = provider;
+    document.querySelectorAll('.agent-provider-btn').forEach(btn => {
+        const isActive = btn.dataset.provider === provider;
+        btn.style.background  = isActive ? 'rgba(140,50,212,.12)' : 'transparent';
+        btn.style.borderColor = isActive ? 'var(--border-med)'    : 'var(--border-dim)';
+        btn.style.color       = isActive ? '#cdd6f4'              : 'var(--text-muted)';
+        btn.classList.toggle('active', isActive);
+    });
+    document.getElementById('agent-card-anthropic').style.display = provider === 'anthropic' ? '' : 'none';
+    document.getElementById('agent-card-gemini').style.display    = provider === 'gemini'    ? '' : 'none';
+}
+
+document.querySelectorAll('.agent-provider-btn').forEach(btn => {
+    btn.addEventListener('click', () => setAgentProvider(btn.dataset.provider));
+});
+
+async function renderAgentSection() {
+    const notAdmin     = document.getElementById('agent-not-admin');
+    const adminContent = document.getElementById('agent-admin-content');
+    try {
+        await window.settingsApi.adminGetUsers(); // throws if not admin
+        notAdmin.style.display     = 'none';
+        adminContent.style.display = '';
+        const cfg = globalConfig;
+        const provider = cfg.agent?.provider || 'anthropic';
+        setAgentProvider(provider);
+        // Anthropic
+        document.getElementById('agent-apikey').value       = cfg.agent?.apiKey || '';
+        const claudeModel = document.getElementById('agent-model-claude');
+        const savedModel  = cfg.agent?.model || 'claude-sonnet-4-6';
+        if ([...claudeModel.options].some(o => o.value === savedModel)) claudeModel.value = savedModel;
+        // Gemini
+        document.getElementById('agent-gemini-apikey').value = cfg.agent?.geminiApiKey || '';
+        const geminiModel = document.getElementById('agent-model-gemini');
+        const savedGeminiModel = cfg.agent?.geminiModel || 'gemini-2.0-flash';
+        if ([...geminiModel.options].some(o => o.value === savedGeminiModel)) geminiModel.value = savedGeminiModel;
+    } catch {
+        notAdmin.style.display     = '';
+        adminContent.style.display = 'none';
+    }
+}
+
+// show/hide API key — Anthropic
+document.getElementById('agent-apikey-toggle').addEventListener('click', function() {
+    const inp = document.getElementById('agent-apikey');
+    if (inp.type === 'password') { inp.type = 'text';     this.textContent = 'Сховати'; }
+    else                         { inp.type = 'password'; this.textContent = 'Показати'; }
+});
+
+// show/hide API key — Gemini
+document.getElementById('agent-gemini-toggle').addEventListener('click', function() {
+    const inp = document.getElementById('agent-gemini-apikey');
+    if (inp.type === 'password') { inp.type = 'text';     this.textContent = 'Сховати'; }
+    else                         { inp.type = 'password'; this.textContent = 'Показати'; }
+});
+
+// Load Gemini models
+document.getElementById('agent-gemini-load-models').addEventListener('click', async function() {
+    const apiKey = document.getElementById('agent-gemini-apikey').value.trim();
+    if (!apiKey) { toast('Введіть API ключ Gemini', 'error'); return; }
+    this.textContent = 'Завантаження...';
+    this.disabled    = true;
+    try {
+        const res = await window.settingsApi.fetchGeminiModels(apiKey);
+        if (!res.ok) throw new Error(res.error || 'Невідома помилка');
+        const models = res.models;
+        if (!models || models.length === 0) { toast('Моделей не знайдено', 'error'); return; }
+        const sel     = document.getElementById('agent-model-gemini');
+        const current = sel.value;
+        sel.innerHTML = '';
+        models.forEach(m => {
+            const opt  = document.createElement('option');
+            opt.value  = m.id;
+            const label = m.displayName || m.id;
+            const free  = m.free ? ' ✓ безкоштовно' : '';
+            const ctx   = m.inputTokenLimit ? ` [${Math.round(m.inputTokenLimit/1000)}k ctx]` : '';
+            opt.textContent = label + free + ctx;
+            sel.appendChild(opt);
+        });
+        // restore previously selected or keep gemini-2.0-flash
+        if ([...sel.options].some(o => o.value === current)) sel.value = current;
+        else if ([...sel.options].some(o => o.value === 'gemini-2.0-flash')) sel.value = 'gemini-2.0-flash';
+        document.getElementById('agent-gemini-model-count').textContent = `${models.length} моделей`;
+        toast(`Завантажено ${models.length} моделей Gemini`, 'success');
+    } catch(e) {
+        toast('Помилка завантаження моделей: ' + e.message, 'error');
+    } finally {
+        this.textContent = 'Завантажити моделі';
+        this.disabled    = false;
+    }
+});
+
+document.getElementById('agent-save').addEventListener('click', async () => {
+    const provider = agentProvider;
+    const agentCfg = {
+        provider,
+        apiKey:       document.getElementById('agent-apikey').value.trim(),
+        model:        document.getElementById('agent-model-claude').value,
+        geminiApiKey: document.getElementById('agent-gemini-apikey').value.trim(),
+        geminiModel:  document.getElementById('agent-model-gemini').value,
+    };
+    const data = Object.assign({}, globalConfig, { agent: agentCfg });
+    try {
+        globalConfig = await window.settingsApi.saveConfig(data);
+        toast('Налаштування AI агента збережено', 'success');
+    } catch {
+        toast('Помилка збереження', 'error');
+    }
+});
+
+document.querySelectorAll('.nav-item[data-section]').forEach(item => {
+    if (item.dataset.section === 'agent')   item.addEventListener('click', renderAgentSection);
+    if (item.dataset.section === 'version') item.addEventListener('click', renderVersionSection);
+});
+
+// ── Version / Update section ──────────────────────────────────────
+let _versionInfo = null;
+
+function semverGt(a, b) {
+    try {
+        const p = v => v.split('.').map(Number);
+        const [aa,ab,ac] = p(a), [ba,bb,bc] = p(b);
+        if (aa !== ba) return aa > ba;
+        if (ab !== bb) return ab > bb;
+        return ac > bc;
+    } catch { return false; }
+}
+
+function fmtBytes(n) {
+    if (n >= 1024*1024) return (n/1024/1024).toFixed(1) + ' МБ';
+    if (n >= 1024)      return (n/1024).toFixed(0) + ' КБ';
+    return n + ' Б';
+}
+
+// State: staged files waiting to upload (platform → File)
+const _stagedFiles = { linux: null, win: null, mac: null };
+// State: already-uploaded files (from server)
+const _uploadedFiles = { linux: null, win: null, mac: null };
+
+function setPlatformProgress(plat, pct) {
+    const wrap = document.getElementById(`vpr-${plat}`);
+    const bar  = document.getElementById(`vpb-${plat}`);
+    const pctEl = document.getElementById(`vpp-${plat}`);
+    if (!wrap) return;
+    if (pct === null) { wrap.style.display = 'none'; return; }
+    wrap.style.display = 'flex';
+    bar.style.setProperty('--pct', pct + '%');
+    pctEl.textContent = pct + '%';
+}
+
+function setPlatformFile(plat, info) {
+    // info: { name, size } or null
+    const drop = document.getElementById(`vd-${plat}`);
+    const fileEl = document.getElementById(`vi-${plat}`);
+    if (!drop || !fileEl) return;
+    if (!info) {
+        drop.style.display = 'flex';
+        fileEl.style.display = 'none';
+        setPlatformProgress(plat, null);
+        return;
+    }
+    drop.style.display = 'none';
+    fileEl.style.display = 'flex';
+    document.getElementById(`vn-${plat}`).textContent = info.name;
+    document.getElementById(`vs-${plat}`).textContent = info.size ? fmtBytes(info.size) : '';
+}
+
+function renderDlBadges(info) {
+    const wrap = document.getElementById('ver-dl-badges');
+    if (!wrap) return;
+    wrap.innerHTML = '';
+    const platforms = [
+        { key:'linux', label:'Linux', icon:'🐧' },
+        { key:'win',   label:'Windows', icon:'🪟' },
+        { key:'mac',   label:'macOS', icon:'' },
+    ];
+    let any = false;
+    platforms.forEach(({ key, label, icon }) => {
+        const url = info[`downloadUrl${key.charAt(0).toUpperCase()+key.slice(1)}`]
+            || (key === 'linux' ? info.downloadUrlLinux : key === 'win' ? info.downloadUrlWin : info.downloadUrlMac);
+        if (!url) return;
+        any = true;
+        const a = document.createElement('a');
+        a.className = 'ver-platform-badge';
+        a.textContent = `${icon} ${label}`;
+        a.href = '#';
+        a.onclick = (e) => { e.preventDefault(); window.settingsApi.openDownloadUrl(url); };
+        wrap.appendChild(a);
+    });
+    if (!any) wrap.innerHTML = '<span style="font-size:11px;color:var(--text-dim)">—</span>';
+}
+
+async function renderVersionSection() {
+    const config = await window.settingsApi.getConfig().catch(() => ({}));
+    const curVer = config.appVersion || '1.0.0';
+    document.getElementById('ver-current').textContent = 'v' + curVer;
+
+    if (currentUser?.role === 'admin') {
+        document.getElementById('ver-admin-card').style.display = '';
+    }
+
+    await checkVersionFromSettings();
+}
+
+async function checkVersionFromSettings() {
+    const info = await window.settingsApi.checkUpdate().catch(() => null);
+    if (!info) return;
+    _versionInfo = info;
+
+    document.getElementById('ver-latest').textContent = 'v' + (info.latestVersion || '?');
+    renderDlBadges(info);
+
+    const notesEl = document.getElementById('ver-notes');
+    if (info.releaseNotes) {
+        notesEl.textContent = info.releaseNotes;
+        notesEl.style.display = '';
+    } else {
+        notesEl.style.display = 'none';
+    }
+
+    const config = await window.settingsApi.getConfig().catch(() => ({}));
+    const curVer = config.appVersion || '1.0.0';
+    const badge  = document.getElementById('ver-status-badge');
+
+    if (semverGt(info.latestVersion, curVer)) {
+        badge.textContent = 'Є оновлення!';
+        badge.style.background = 'rgba(232,17,35,.1)';
+        badge.style.color      = '#e81123';
+        badge.style.borderColor = 'rgba(232,17,35,.2)';
+        // Show platform-aware download button
+        const dlBtn = document.getElementById('ver-download-btn');
+        const anyUrl = info.downloadUrlLinux || info.downloadUrlWin || info.downloadUrlMac || info.downloadUrl;
+        dlBtn.style.display = anyUrl ? '' : 'none';
+        dlBtn.onclick = () => window.settingsApi.openDownloadUrl(anyUrl);
+    } else {
+        badge.textContent = 'Актуальна';
+        badge.style.background = 'rgba(40,200,64,.1)';
+        badge.style.color = '#28c840';
+        badge.style.borderColor = 'rgba(40,200,64,.2)';
+        document.getElementById('ver-download-btn').style.display = 'none';
+    }
+
+    // Restore uploaded files state in admin UI
+    if (currentUser?.role === 'admin' && info.filesInfo) {
+        ['linux','win','mac'].forEach(plat => {
+            const fi = info.filesInfo[plat];
+            _uploadedFiles[plat] = fi || null;
+            if (fi && !_stagedFiles[plat]) {
+                setPlatformFile(plat, fi);
+            }
+        });
+    }
+}
+
+document.getElementById('ver-check-btn')?.addEventListener('click', async () => {
+    const btn = document.getElementById('ver-check-btn');
+    btn.textContent = 'Перевіряємо…';
+    btn.disabled = true;
+    await checkVersionFromSettings();
+    btn.textContent = 'Перевірити';
+    btn.disabled = false;
+    toast('Перевірка завершена', 'info');
+});
+
+// ── Platform file drop zones ──────────────────────────────────────
+['linux','win','mac'].forEach(plat => {
+    const dropZone = document.getElementById(`vd-${plat}`);
+    const fileInput = document.getElementById(`vf-${plat}`);
+    const delBtn    = document.getElementById(`vdel-${plat}`);
+    if (!dropZone || !fileInput) return;
+
+    // Click to open native file dialog (file.path is unavailable in Electron 28 renderer)
+    dropZone.addEventListener('click', async () => {
+        const result = await window.settingsApi.adminPickFile({ platform: plat });
+        if (!result) return;
+        _stagedFiles[plat] = result; // { path, name, size }
+        setPlatformFile(plat, { name: result.name, size: result.size });
+    });
+
+    // Drag & drop — Electron 28 removes file.path on File objects, use dialog fallback
+    dropZone.addEventListener('dragover', e => {
+        e.preventDefault();
+        dropZone.classList.add('drag-over');
+    });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+    dropZone.addEventListener('drop', async e => {
+        e.preventDefault();
+        dropZone.classList.remove('drag-over');
+        const file = e.dataTransfer.files[0];
+        if (!file) return;
+        // Electron 28: file.path may be empty string; fall back to native dialog
+        if (file.path) {
+            _stagedFiles[plat] = { path: file.path, name: file.name, size: file.size };
+            setPlatformFile(plat, { name: file.name, size: file.size });
+        } else {
+            const result = await window.settingsApi.adminPickFile({ platform: plat });
+            if (!result) return;
+            _stagedFiles[plat] = result;
+            setPlatformFile(plat, { name: result.name, size: result.size });
+        }
+    });
+
+    // Delete button
+    delBtn?.addEventListener('click', async () => {
+        if (_stagedFiles[plat]) {
+            // just a staged file, clear it
+            _stagedFiles[plat] = null;
+            setPlatformFile(plat, _uploadedFiles[plat] || null);
+            return;
+        }
+        // delete from server
+        delBtn.disabled = true;
+        const res = await window.settingsApi.adminDeleteRelease(plat).catch(() => null);
+        delBtn.disabled = false;
+        if (res?.ok) {
+            _uploadedFiles[plat] = null;
+            setPlatformFile(plat, null);
+            toast(`Файл для ${plat} видалено`, 'success');
+        } else {
+            toast('Помилка видалення файлу', 'error');
+        }
+    });
+});
+
+// Listen to upload progress events
+window.settingsApi.onUploadProgress(({ platform, pct }) => {
+    setPlatformProgress(platform, pct);
+});
+
+// ── Publish button ─────────────────────────────────────────────────
+document.getElementById('ver-publish-btn')?.addEventListener('click', async () => {
+    const latestVersion = document.getElementById('ver-new-version').value.trim();
+    const releaseNotes  = document.getElementById('ver-new-notes').value.trim();
+    const forceUpdate   = document.getElementById('ver-force-update').checked;
+    const statusEl      = document.getElementById('ver-publish-status');
+    const publishBtn    = document.getElementById('ver-publish-btn');
+
+    if (!latestVersion || !/^\d+\.\d+\.\d+$/.test(latestVersion)) {
+        toast('Введіть версію у форматі x.y.z', 'error'); return;
+    }
+
+    publishBtn.disabled = true;
+    statusEl.textContent = '';
+
+    // Step 1: upload staged files
+    const platforms = ['linux','win','mac'];
+    for (const plat of platforms) {
+        const file = _stagedFiles[plat];
+        if (!file) continue;
+        statusEl.textContent = `Завантажуємо ${plat}…`;
+        setPlatformProgress(plat, 0);
+        try {
+            const result = await window.settingsApi.adminUploadRelease(file.path, plat);
+            if (result?.ok || result?.data?.ok) {
+                _stagedFiles[plat] = null;
+                const fi = result.data?.file || result.file;
+                if (fi) { _uploadedFiles[plat] = fi; setPlatformFile(plat, fi); }
+                setPlatformProgress(plat, null);
+                toast(`${plat} завантажено`, 'success');
+            } else {
+                const err = result?.data?.error || 'Помилка';
+                toast(`Помилка завантаження ${plat}: ${err}`, 'error');
+                setPlatformProgress(plat, null);
+            }
+        } catch(e) {
+            toast(`Помилка: ${e.message}`, 'error');
+            setPlatformProgress(plat, null);
+        }
+    }
+
+    // Step 2: publish version metadata
+    statusEl.textContent = 'Публікуємо версію…';
+    const res = await window.settingsApi.adminSetVersion({ latestVersion, releaseNotes, forceUpdate }).catch(() => null);
+    if (res?.ok) {
+        statusEl.textContent = '';
+        toast(`Версія ${latestVersion} опублікована`, 'success');
+        await checkVersionFromSettings();
+    } else {
+        statusEl.textContent = '';
+        toast('Помилка публікації версії', 'error');
+    }
+    publishBtn.disabled = false;
+});
+
+// ── Start ─────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,69 @@
+# ── Node / npm ────────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnp
+.pnp.js
+
+# ── Electron build output ─────────────────────────────────────────
+dist/
+out/
+build/
+release/
+*.dmg
+*.exe
+*.AppImage
+*.deb
+*.rpm
+*.snap
+*.zip
+
+# ── Database files ────────────────────────────────────────────────
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+
+# ── Sensitive / credentials ───────────────────────────────────────
+.admin-credentials
+.env
+.env.local
+.env.*.local
+server-config.json
+
+# ── Electron userData / cache ─────────────────────────────────────
+userData/
+userdata/
+
+# ── OS junk ───────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+.directory
+
+# ── Editor ────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ── Backup files ──────────────────────────────────────────────────
+*.bak
+*.orig
+
+# ── Logs ─────────────────────────────────────────────────────────
+logs/
+*.log
+
+# ── Claude / AI tooling ───────────────────────────────────────────
+.claude/
+.dmux/
+.worktrees/task/test/

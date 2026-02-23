@@ -1,0 +1,1376 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DEFIS Browser</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+    <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }</script>
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { obsidian:'#121212', graphite:'#1F1F1F', mercury:'#E5E5E5', slate:'#888888' }, fontFamily:{ sans:['"Inter"','sans-serif'] } } }
+        }
+    </script>
+
+    <style>
+        /* ── DEFIS Premium Design Tokens ────────────────────────── */
+        :root {
+            --bg:           #0b0b0b;
+            --bg-chrome:    #0e0e0e;
+            --bg-surface:   #141414;
+            --bg-elevated:  #1a1a1a;
+            --bg-card:      #181818;
+            --bg-float:     rgba(14,14,14,0.97);
+            --border-faint: rgba(255,255,255,0.05);
+            --border-dim:   rgba(255,255,255,0.08);
+            --border-med:   rgba(255,255,255,0.12);
+            --border-str:   rgba(255,255,255,0.18);
+            --text-1:   #efefef;
+            --text-2:   #9a9a9a;
+            --text-3:   #5a5a5a;
+            --text-4:   #363636;
+            --accent:       #a78bfa;
+            --accent-dark:  #7c3aed;
+            --accent-med:   #8b5cf6;
+            --accent-glow:  rgba(167,139,250,0.18);
+            --accent-bg:    rgba(167,139,250,0.10);
+            --green:    #4ade80;
+            --red:      #f87171;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body { background:var(--bg); color:var(--text-1); overflow:hidden; font-family:'Inter',system-ui,sans-serif; margin:0; }
+
+        /* ── Browser Chrome ──────────────────────────────────────── */
+        #chrome { position:fixed; top:0; left:0; right:0; height:90px; z-index:1000; background:var(--bg-chrome); }
+
+        /* Titlebar row */
+        #chrome-titlebar {
+            height:42px; display:flex; align-items:center;
+            border-bottom:1px solid rgba(255,255,255,0.06);
+            -webkit-app-region: drag; /* entire row draggable by default */
+            overflow:hidden;
+        }
+        #chrome-tabs-wrapper {
+            display:flex; align-items:center; gap:4px;
+            -webkit-app-region: no-drag;
+            overflow:hidden; min-width:0; padding:0 8px;
+        }
+        #tabs-container { display:flex; align-items:center; gap:2px; overflow-x:auto; overflow-y:hidden; scrollbar-width:none; flex:1; }
+        #tabs-container::-webkit-scrollbar { display:none; }
+
+        #title-drag-area { flex:1; min-width:60px; height:100%; display:flex; align-items:center; justify-content:center; gap:4px; -webkit-app-region:drag; }
+        #profile-label   { font-size:11px; color:#666; user-select:none; pointer-events:none; letter-spacing:0.02em; }
+        .prof-cycle-btn  { -webkit-app-region:no-drag; background:none; border:none; color:#555; cursor:pointer; padding:2px 5px; font-size:15px; line-height:1; border-radius:3px; flex-shrink:0; transition:color .15s,background .15s; }
+        .prof-cycle-btn:hover { color:#bbb; background:rgba(255,255,255,0.07); }
+
+        /* Windows-style window controls (RIGHT side) */
+        #chrome-wc { display:flex; align-items:stretch; height:42px; -webkit-app-region:no-drag; flex-shrink:0; }
+        .wc-btn {
+            width:46px; height:100%; border:none; background:transparent; color:#666;
+            cursor:pointer; font-size:13px; font-weight:400;
+            display:flex; align-items:center; justify-content:center;
+            transition:background .15s,color .15s; border-radius:0;
+            font-family:'Inter',sans-serif;
+        }
+        .wc-btn:hover         { background:rgba(255,255,255,0.08); color:#E5E5E5; }
+        #btn-close:hover      { background:#e81123 !important; color:#fff; }
+
+        /* Tabs */
+        .tab { display:flex; align-items:center; gap:7px; padding:0 10px 0 9px; height:30px; min-width:110px; max-width:200px; background:#2a2a2a; border:1px solid transparent; border-radius:8px; cursor:pointer; flex-shrink:0; transition:background .2s,border-color .2s; }
+        .tab:hover  { background:rgba(255,255,255,0.06); border-color:rgba(255,255,255,0.08); }
+        .tab.active { background:#1F1F1F; border-color:rgba(255,255,255,0.14); }
+        .tab-favicon { width:14px; height:14px; flex-shrink:0; display:flex; align-items:center; justify-content:center; color:#888; }
+        .tab-favicon img { width:14px; height:14px; border-radius:2px; }
+        .tab-title  { font-size:12px; color:#888; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1; min-width:0; }
+        .tab.active .tab-title { color:#E5E5E5; }
+        .tab-close  { width:16px; height:16px; border-radius:4px; background:transparent; border:none; color:#888; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:13px; flex-shrink:0; opacity:0; transition:all .15s; }
+        .tab:hover .tab-close, .tab.active .tab-close { opacity:1; }
+        .tab-close:hover { background:rgba(255,255,255,0.1); color:#E5E5E5; }
+
+        #new-tab-btn { width:28px; height:28px; border-radius:8px; background:transparent; border:1px solid transparent; color:#888; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all .2s; }
+        #new-tab-btn:hover { background:rgba(255,255,255,0.06); border-color:rgba(255,255,255,0.08); color:#E5E5E5; }
+        #new-tab-btn svg { width:13px; height:13px; }
+
+        /* Toolbar row */
+        #chrome-toolbar { height:48px; display:flex; align-items:center; padding:0 10px; gap:4px; border-bottom:1px solid rgba(255,255,255,0.08); }
+
+        .nav-btn { width:32px; height:32px; border-radius:8px; background:transparent; border:none; color:#888; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:background .2s,color .2s; }
+        .nav-btn:hover    { background:rgba(255,255,255,0.06); color:#E5E5E5; }
+        .nav-btn:disabled { opacity:.25; pointer-events:none; }
+        .nav-btn svg      { width:16px; height:16px; }
+
+        #address-bar-wrapper { flex:1; display:flex; align-items:center; gap:8px; height:34px; padding:0 12px; background:#1F1F1F; border:1px solid rgba(255,255,255,0.08); border-radius:10px; margin:0 4px; transition:border-color .2s,background .2s; }
+        #address-bar-wrapper:focus-within { border-color:rgba(157,124,206,0.45); background:#2a2a2a; }
+        #lock-icon { color:#888; display:flex; align-items:center; flex-shrink:0; }
+        #address-bar { flex:1; background:transparent; border:none; outline:none; color:#E5E5E5; font-size:13px; font-family:'Inter',sans-serif; user-select:text; -webkit-user-select:text; }
+        #address-bar::placeholder { color:rgba(136,136,136,0.45); }
+
+        /* Dropdown wrapper */
+        .btn-wrap { position:relative; }
+
+        /* ── Dropdown menus ─────────────────────────────────────── */
+        .dropdown-menu {
+            position:absolute; top:calc(100% + 6px); right:0; z-index:2000;
+            backdrop-filter:blur(16px); background:rgba(18,18,18,0.97);
+            border:1px solid rgba(255,255,255,0.12); border-radius:12px; padding:6px;
+            opacity:0; pointer-events:none; transform:translateY(-6px);
+            transition:all .25s cubic-bezier(.2,.8,.2,1);
+            min-width:260px;
+        }
+        .dropdown-menu.open { opacity:1; pointer-events:all; transform:translateY(0); }
+
+        .menu-section-title { padding:8px 10px 4px; font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:#555; font-weight:600; }
+        .menu-divider       { height:1px; background:rgba(255,255,255,0.08); margin:5px 0; }
+
+        .menu-item { display:flex; align-items:center; gap:11px; padding:9px 11px; border-radius:8px; cursor:pointer; color:#C0C0C0; font-size:13px; transition:background .15s,color .15s; }
+        .menu-item:hover { background:rgba(255,255,255,0.08); color:#E5E5E5; }
+        .menu-item svg   { width:17px; height:17px; color:#666; flex-shrink:0; }
+        .menu-item:hover svg { color:#E5E5E5; }
+        .menu-item.active-engine { background:rgba(157,124,206,0.15); color:#E5E5E5; }
+
+        .bookmark-item { display:flex; align-items:center; gap:11px; padding:9px 11px; border-radius:8px; cursor:pointer; color:#C0C0C0; font-size:13px; transition:background .15s; }
+        .bookmark-item:hover { background:rgba(255,255,255,0.08); color:#E5E5E5; }
+        .bookmark-favicon { width:30px; height:30px; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:#fff; flex-shrink:0; }
+
+        /* ── Page screenshot background (shows under menus instead of black void) ── */
+        #page-sc-bg {
+            position:fixed; top:90px; left:0; right:0; bottom:0; z-index:999;
+            background-size:cover; background-position:top left; background-repeat:no-repeat;
+            display:none; pointer-events:none;
+        }
+
+        /* ── WebGL background ───────────────────────────────────── */
+        #webgl-container { position:fixed; top:90px; left:0; width:100%; height:calc(100% - 90px); z-index:0; }
+
+        /* ── New tab content ────────────────────────────────────── */
+        #newtab-area { position:fixed; top:90px; left:0; right:0; bottom:0; z-index:10; display:flex; flex-direction:column; align-items:center; justify-content:center; pointer-events:none; }
+        .search-container { backdrop-filter:blur(12px); background:rgba(31,31,31,0.4); border:1px solid rgba(255,255,255,0.1); }
+        .search-container:focus-within { border-color:rgba(255,255,255,0.25); }
+
+        @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes glow   { 0%,100%{opacity:.7;letter-spacing:.5em} 50%{opacity:1;letter-spacing:.6em} }
+        .animate-fade-in { animation:fadeIn .8s ease-out forwards; }
+        .animate-glow    { animation:glow  3s  ease-in-out infinite; }
+
+        /* ── Modal ──────────────────────────────────────────────── */
+        .modal          { position:fixed; inset:0; z-index:3000; display:flex; align-items:center; justify-content:center; }
+        .modal.hidden   { display:none; }
+        .modal-backdrop { position:absolute; inset:0; background:rgba(0,0,0,0.65); backdrop-filter:blur(4px); }
+        .modal-box      { position:relative; z-index:1; background:#1a1a1a; border:1px solid rgba(255,255,255,0.12); border-radius:16px; padding:24px; width:460px; max-height:80vh; overflow-y:auto; }
+        .modal-header   { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+        .modal-title    { font-size:15px; font-weight:600; color:#E5E5E5; }
+        .modal-close    { background:transparent; border:none; color:#666; font-size:18px; cursor:pointer; padding:4px 8px; border-radius:6px; transition:background .15s,color .15s; }
+        .modal-close:hover { background:rgba(255,255,255,0.08); color:#E5E5E5; }
+
+        .form-label     { display:block; font-size:12px; color:#777; margin-bottom:4px; margin-top:14px; }
+        .form-input     { width:100%; background:#242424; border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:8px 12px; color:#E5E5E5; font-size:13px; font-family:'Inter',sans-serif; outline:none; transition:border-color .2s; }
+        .form-input:focus { border-color:rgba(157,124,206,0.5); }
+        .form-select    { width:100%; background:#242424; border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:8px 12px; color:#E5E5E5; font-size:13px; font-family:'Inter',sans-serif; outline:none; cursor:pointer; }
+        .form-check     { display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; color:#C0C0C0; padding:4px 0; }
+        .form-check input { cursor:pointer; accent-color:#9d7cce; width:15px; height:15px; }
+        .form-row       { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+
+        .btn-primary { background:#9d7cce; border:none; border-radius:8px; padding:9px 20px; color:#fff; font-size:13px; font-weight:500; cursor:pointer; transition:background .15s; }
+        .btn-primary:hover { background:#8a6bb8; }
+        .btn-danger  { background:rgba(232,17,35,0.15); border:1px solid rgba(232,17,35,0.3); border-radius:8px; padding:9px 20px; color:#ff6b6b; font-size:13px; cursor:pointer; transition:all .15s; }
+        .btn-danger:hover  { background:rgba(232,17,35,0.3); }
+        .btn-ghost   { background:transparent; border:1px solid rgba(255,255,255,0.12); border-radius:8px; padding:9px 20px; color:#888; font-size:13px; cursor:pointer; transition:all .15s; }
+        .btn-ghost:hover { background:rgba(255,255,255,0.06); color:#E5E5E5; }
+        .modal-footer   { display:flex; gap:10px; justify-content:flex-end; margin-top:24px; }
+
+        /* ── Profile Manager: Modal tabs ────────────────────────────── */
+        .pm-tabs { display:flex; gap:2px; padding:0 0 12px; border-bottom:1px solid rgba(255,255,255,0.07); margin-bottom:14px; }
+        .pm-tab { flex:1; padding:7px 12px; background:transparent; border:1px solid transparent; border-radius:8px; color:#666; font-size:12px; font-family:'Inter',sans-serif; cursor:pointer; font-weight:500; transition:all .15s; text-align:center; }
+        .pm-tab.active { background:#1F1F1F; border-color:rgba(255,255,255,0.12); color:#E5E5E5; }
+        .pm-tab:not(.active):hover { color:#C0C0C0; background:rgba(255,255,255,0.04); }
+
+        /* Profile cards in manager */
+        .profile-card { display:flex; align-items:center; gap:14px; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.07); background:#222; margin-bottom:8px; transition:background .15s; }
+        .profile-card:hover { background:#282828; }
+        .profile-avatar { width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:#fff; flex-shrink:0; }
+        .profile-card-info { flex:1; min-width:0; }
+        .profile-card-name { font-size:13px; font-weight:500; color:#E5E5E5; }
+        .profile-card-meta { font-size:11px; color:#666; margin-top:2px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+        .profile-card-meta .meta-badge { padding:1px 6px; border-radius:4px; background:rgba(255,255,255,0.06); font-size:10px; color:#777; }
+        .profile-card-meta .meta-proxy-on  { color:#28c840; background:rgba(40,200,64,0.1); }
+        .profile-card-meta .meta-proxy-off { color:#555; }
+        .profile-card-btns { display:flex; gap:6px; flex-shrink:0; }
+        .card-btn { background:transparent; border:1px solid rgba(255,255,255,0.1); border-radius:7px; padding:5px 10px; color:#888; font-size:12px; cursor:pointer; transition:all .15s; }
+        .card-btn:hover { background:rgba(255,255,255,0.06); color:#E5E5E5; }
+        .card-btn.primary { border-color:rgba(157,124,206,0.4); color:#9d7cce; }
+        .card-btn.primary:hover { background:rgba(157,124,206,0.15); }
+        .card-btn.proxy-toggle-on { border-color:rgba(40,200,64,.35); color:#28c840; display:flex; align-items:center; gap:5px; }
+        .card-btn.proxy-toggle-on:hover { background:rgba(40,200,64,.1); }
+        .card-btn:not(.proxy-toggle-on)[data-proxy-toggle] { display:flex; align-items:center; gap:5px; }
+
+        /* ── Admin panel sub-tabs ────────────────────────────────────── */
+        .adm-tabs { display:flex; gap:4px; margin-bottom:14px; }
+        .adm-tab { padding:5px 14px; background:transparent; border:1px solid rgba(255,255,255,0.08); border-radius:20px; color:#666; font-size:11px; font-family:'Inter',sans-serif; cursor:pointer; transition:all .15s; font-weight:500; }
+        .adm-tab.active { background:rgba(157,124,206,0.15); border-color:rgba(157,124,206,0.4); color:#9d7cce; }
+        .adm-tab:not(.active):hover { color:#C0C0C0; border-color:rgba(255,255,255,0.15); }
+
+        /* ── Admin: User table ────────────────────────────────────────── */
+        .user-table { width:100%; border-collapse:collapse; font-size:12px; }
+        .user-table th { padding:6px 10px; color:#555; font-weight:500; text-align:left; border-bottom:1px solid rgba(255,255,255,0.07); font-size:11px; text-transform:uppercase; letter-spacing:.04em; }
+        .user-table td { padding:8px 10px; border-bottom:1px solid rgba(255,255,255,0.05); color:#C0C0C0; vertical-align:middle; }
+        .user-table tr:last-child td { border-bottom:none; }
+        .user-table tr:hover td { background:rgba(255,255,255,0.03); }
+        .role-badge { display:inline-block; padding:2px 8px; border-radius:10px; font-size:10px; font-weight:600; letter-spacing:.03em; text-transform:uppercase; }
+        .role-admin   { background:rgba(157,124,206,0.2); color:#9d7cce; }
+        .role-manager { background:rgba(97,175,239,0.2); color:#61afef; }
+        .role-user    { background:rgba(255,255,255,0.06); color:#666; }
+
+        /* ── Admin: Create user form ──────────────────────────────────── */
+        .adm-form { background:#1a1a1a; border:1px solid rgba(255,255,255,0.07); border-radius:10px; padding:14px; margin-top:14px; }
+        .adm-form-title { font-size:11px; font-weight:600; color:#666; text-transform:uppercase; letter-spacing:.06em; margin-bottom:12px; }
+        .adm-form-row { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+        .adm-form-row.one { grid-template-columns:1fr; }
+
+        /* ── Admin: AdsPower panel ────────────────────────────────────── */
+        .adsp-status-box { display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:10px; background:#1a1a1a; border:1px solid rgba(255,255,255,0.07); margin-bottom:14px; }
+        .adsp-dot { width:8px; height:8px; border-radius:50%; background:#444; flex-shrink:0; }
+        .adsp-dot.ok { background:#28c840; box-shadow:0 0 6px rgba(40,200,64,.5); }
+        .adsp-dot.err { background:#e81123; }
+        .adsp-status-text { font-size:13px; color:#C0C0C0; flex:1; }
+        .adsp-status-sub { font-size:11px; color:#555; margin-top:1px; }
+
+        .adsp-profile-table { width:100%; border-collapse:collapse; font-size:12px; margin-bottom:12px; }
+        .adsp-profile-table th { padding:5px 8px; color:#555; font-weight:500; text-align:left; border-bottom:1px solid rgba(255,255,255,0.07); font-size:10px; text-transform:uppercase; letter-spacing:.04em; }
+        .adsp-profile-table td { padding:7px 8px; border-bottom:1px solid rgba(255,255,255,0.04); color:#C0C0C0; vertical-align:middle; }
+        .adsp-profile-table tr:last-child td { border-bottom:none; }
+        .adsp-profile-table tr:hover td { background:rgba(255,255,255,0.03); }
+
+        /* ── Import progress modal ────────────────────────────────────── */
+        #import-progress-modal .modal-box { width:500px; }
+        .import-log { background:#111; border:1px solid rgba(255,255,255,0.07); border-radius:8px; padding:10px 12px; max-height:180px; overflow-y:auto; font-size:11px; font-family:monospace; color:#888; margin:10px 0; }
+        .import-log-line { margin-bottom:3px; }
+        .import-log-line.ok  { color:#28c840; }
+        .import-log-line.err { color:#e07070; }
+        .import-log-line.info{ color:#9d7cce; }
+        .import-progress-bar { height:4px; background:rgba(255,255,255,0.07); border-radius:2px; overflow:hidden; margin-bottom:8px; }
+        .import-progress-fill { height:100%; background:#9d7cce; border-radius:2px; transition:width .3s ease; width:0%; }
+
+        /* ── Assign-profiles mini modal ───────────────────────────────── */
+        #assign-modal .modal-box { width:480px; max-height:70vh; }
+        .assign-profile-item { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px; cursor:pointer; transition:background .15s; }
+        .assign-profile-item:hover { background:rgba(255,255,255,0.04); }
+        .assign-profile-item input[type=checkbox] { accent-color:#9d7cce; cursor:pointer; width:14px; height:14px; }
+
+        /* ── Toast ──────────────────────────────────────────────── */
+        #toast-container { position:fixed; bottom:24px; right:24px; z-index:5000; display:flex; flex-direction:column; gap:8px; pointer-events:none; }
+        .toast { background:#1F1F1F; border:1px solid rgba(255,255,255,0.12); border-radius:10px; padding:11px 16px; color:#E5E5E5; font-size:13px; pointer-events:none; animation:toastIn .3s ease; }
+        .toast.success { border-left:3px solid #28c840; }
+        .toast.error   { border-left:3px solid #e81123; }
+        .toast.info    { border-left:3px solid #9d7cce; }
+        @keyframes toastIn { from{opacity:0;transform:translateX(24px)} to{opacity:1;transform:translateX(0)} }
+
+        /* ── Screenshot lightbox ─────────────────────────────────── */
+        #sc-lightbox {
+            position:fixed; inset:0; z-index:9999;
+            background:rgba(0,0,0,0.92); backdrop-filter:blur(8px);
+            display:flex; align-items:center; justify-content:center;
+            opacity:0; pointer-events:none;
+            transition:opacity .18s ease;
+        }
+        #sc-lightbox.open { opacity:1; pointer-events:all; }
+        #sc-lightbox-img {
+            max-width:calc(100vw - 80px); max-height:calc(100vh - 80px);
+            border-radius:8px; box-shadow:0 24px 80px rgba(0,0,0,.8);
+            object-fit:contain; transform:scale(.96);
+            transition:transform .18s ease;
+            user-select:none;
+        }
+        #sc-lightbox.open #sc-lightbox-img { transform:scale(1); }
+        #sc-lightbox-close {
+            position:absolute; top:16px; right:16px;
+            background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12);
+            color:#ccc; cursor:pointer; width:36px; height:36px; border-radius:50%;
+            display:flex; align-items:center; justify-content:center;
+            font-size:18px; line-height:1; transition:all .15s;
+        }
+        #sc-lightbox-close:hover { background:rgba(255,255,255,0.15); color:#fff; }
+        #sc-lightbox-hint {
+            position:absolute; bottom:18px; left:50%; transform:translateX(-50%);
+            font-size:11px; color:rgba(255,255,255,0.25); pointer-events:none; white-space:nowrap;
+        }
+
+        /* Extensions button — highlight when active/has extensions */
+        #ext-btn.active { color:#9d7cce; }
+        #ext-btn.active:hover { background:rgba(157,124,206,0.12); }
+
+        /* Extensions dropdown item icon */
+        .ext-row-icon { width:16px; height:16px; border-radius:3px; flex-shrink:0; }
+
+        /* Chrome Web Store install banner */
+        #cws-banner {
+            position:fixed; bottom:52px; right:16px; z-index:2400;
+            background:#1a1a1a; border:1px solid rgba(157,124,206,.35);
+            border-radius:12px; padding:12px 14px; display:none;
+            align-items:center; gap:12px; box-shadow:0 8px 32px rgba(0,0,0,.6);
+            max-width:380px; animation:cwsBannerIn .25s cubic-bezier(.34,1.56,.64,1);
+        }
+        #cws-banner.visible { display:flex; }
+        @keyframes cwsBannerIn { from { transform:translateY(12px); opacity:0; } to { transform:translateY(0); opacity:1; } }
+        #cws-banner .cws-puzzle { color:#9d7cce; flex-shrink:0; }
+        #cws-banner .cws-info { flex:1; min-width:0; }
+        #cws-banner .cws-label { font-size:10px; color:#666; text-transform:uppercase; letter-spacing:.05em; }
+        #cws-banner .cws-name { font-size:13px; color:#E5E5E5; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        #cws-banner .cws-install-btn {
+            background:#8c32d4; color:#fff; border:none; border-radius:8px;
+            padding:7px 16px; font-size:13px; font-weight:600; cursor:pointer;
+            white-space:nowrap; flex-shrink:0; transition:background .15s;
+        }
+        #cws-banner .cws-install-btn:hover:not(:disabled) { background:#9d3fe8; }
+        #cws-banner .cws-install-btn:disabled { opacity:.55; cursor:default; }
+        #cws-banner .cws-close {
+            background:none; border:none; color:#555; font-size:16px; cursor:pointer;
+            padding:2px 6px; border-radius:6px; line-height:1; flex-shrink:0;
+        }
+        #cws-banner .cws-close:hover { color:#E5E5E5; background:rgba(255,255,255,.06); }
+
+        /* Download bar */
+        #download-bar { position:fixed; bottom:0; left:0; right:0; height:42px; background:#1F1F1F; border-top:1px solid rgba(255,255,255,0.08); z-index:2500; display:none; align-items:center; padding:0 16px; gap:12px; }
+        #download-bar.visible { display:flex; }
+        #download-bar .dl-name { font-size:13px; color:#E5E5E5; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        #download-bar .dl-progress { font-size:12px; color:#888; }
+        #download-bar .dl-close  { background:transparent; border:none; color:#666; font-size:16px; cursor:pointer; padding:4px 8px; border-radius:6px; }
+        #download-bar .dl-close:hover { color:#E5E5E5; background:rgba(255,255,255,0.08); }
+
+        /* ── Update banner ────────────────────────────────────────── */
+        #update-banner {
+            position:fixed; top:92px; left:50%; transform:translateX(-50%);
+            z-index:9000; background:linear-gradient(135deg,#1a0a2e,#0f172a);
+            border:1px solid rgba(157,124,206,0.5); border-radius:12px;
+            padding:12px 18px; display:none; align-items:center; gap:14px;
+            box-shadow:0 4px 32px rgba(140,50,212,0.3);
+            min-width:420px; max-width:600px;
+            animation:updateSlideIn .35s cubic-bezier(.2,.8,.2,1);
+        }
+        #update-banner.visible { display:flex; }
+        @keyframes updateSlideIn { from { opacity:0; transform:translateX(-50%) translateY(-10px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }
+        .upd-icon { width:30px; height:30px; border-radius:8px; background:rgba(157,124,206,0.15); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+        .upd-icon svg { width:16px; height:16px; color:#9d7cce; }
+        .upd-body { flex:1; min-width:0; }
+        .upd-title { font-size:13px; font-weight:600; color:#E5E5E5; margin-bottom:2px; }
+        .upd-desc  { font-size:11px; color:#666; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .upd-btn {
+            padding:6px 14px; background:#8c32d4; border:none; color:#fff;
+            font-size:12px; font-weight:600; border-radius:7px; cursor:pointer;
+            transition:background .15s; flex-shrink:0; white-space:nowrap;
+        }
+        .upd-btn:hover { background:#9d4be2; }
+        .upd-close { background:transparent; border:none; color:#555; font-size:16px; cursor:pointer; padding:2px 6px; border-radius:6px; line-height:1; flex-shrink:0; }
+        .upd-close:hover { color:#E5E5E5; background:rgba(255,255,255,.06); }
+
+        /* ── Notepad button active state ── */
+        #notepadBtn.np-open { color:#9d7cce; background:rgba(157,124,206,0.1); }
+
+        /* ── Agent button active state ── */
+        #agentBtn.ag-open { color:#9d7cce; background:rgba(157,124,206,0.1); }
+
+        /* ── Agent panel ─────────────────────────────────────────── */
+        #agent-panel {
+            position:fixed; top:90px; right:0; width:380px; height:calc(100% - 90px);
+            background:#0a0a0a; border-left:1px solid rgba(255,255,255,0.07);
+            z-index:1500; display:flex; flex-direction:column;
+            transform:translateX(105%); transition:transform .28s cubic-bezier(.2,.8,.2,1);
+            overflow:hidden; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+        }
+        #agent-panel.ag-visible { transform:translateX(0); }
+
+        /* Header */
+        .ag-header {
+            display:flex; align-items:center; gap:8px; height:50px; padding:0 8px 0 16px;
+            border-bottom:1px solid rgba(255,255,255,0.06); flex-shrink:0;
+        }
+        .ag-header-icon { color:#8c32d4; display:flex; flex-shrink:0; }
+        .ag-header-title { font-size:13px; font-weight:600; color:#e0e0e0; flex:1; letter-spacing:-0.01em; }
+        .ag-header-model { font-size:10px; color:#444; padding:2px 7px; background:#111; border:1px solid #1e1e1e; border-radius:10px; white-space:nowrap; max-width:100px; overflow:hidden; text-overflow:ellipsis; }
+        .ag-icon-btn { background:none; border:none; color:#555; cursor:pointer; padding:6px; border-radius:6px; display:flex; align-items:center; transition:all .15s; flex-shrink:0; }
+        .ag-icon-btn:hover { color:#ccc; background:rgba(255,255,255,0.06); }
+        .ag-icon-btn svg { width:15px; height:15px; }
+
+        /* Status bar */
+        #ag-status-bar {
+            display:none; align-items:center; gap:8px; padding:6px 14px;
+            background:rgba(140,50,212,0.05); border-bottom:1px solid rgba(140,50,212,0.12); flex-shrink:0;
+        }
+        #ag-status-bar.visible { display:flex; }
+        .ag-pulse { width:6px; height:6px; border-radius:50%; background:#8c32d4; flex-shrink:0; animation:agPulse 1.4s ease-in-out infinite; }
+        @keyframes agPulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.35;transform:scale(.65)} }
+        #ag-status-text { font-size:11px; color:#8c32d4; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+        /* Chat log */
+        #ag-log {
+            flex:1; overflow-y:auto; padding:14px 12px 6px; display:flex; flex-direction:column; gap:12px;
+        }
+        #ag-log::-webkit-scrollbar { width:3px; }
+        #ag-log::-webkit-scrollbar-track { background:transparent; }
+        #ag-log::-webkit-scrollbar-thumb { background:#222; border-radius:2px; }
+
+        /* Empty state */
+        #ag-empty {
+            display:flex; flex-direction:column; align-items:center; justify-content:center;
+            flex:1; gap:10px; color:#444; pointer-events:none; padding:20px;
+        }
+        #ag-empty svg { width:40px; height:40px; opacity:.3; }
+        #ag-empty p { font-size:12px; text-align:center; line-height:1.6; margin:0; }
+
+        /* User bubble */
+        .ag-user-msg {
+            align-self:flex-end; max-width:88%; background:#8c32d4;
+            color:#fff; border-radius:18px 18px 5px 18px;
+            padding:10px 14px; font-size:12.5px; line-height:1.5;
+            word-break:break-word; white-space:pre-wrap;
+        }
+
+        /* Agent turn */
+        .ag-agent-turn { display:flex; flex-direction:column; gap:6px; max-width:100%; }
+
+        /* Thought */
+        .ag-thought {
+            font-size:11.5px; color:#555; line-height:1.6; font-style:italic;
+            white-space:pre-wrap; word-break:break-word; padding-left:2px;
+        }
+
+        /* Action chip */
+        .ag-action {
+            display:inline-flex; align-items:center; gap:6px; font-size:11px;
+            color:#888; padding:4px 10px 4px 8px; background:#111; border:1px solid #1e1e1e;
+            border-radius:20px; align-self:flex-start;
+        }
+        .ag-action-icon { font-size:12px; flex-shrink:0; line-height:1; }
+        .ag-action-tool { color:#9d6de0; font-weight:600; flex-shrink:0; }
+        .ag-action-detail { color:#666; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:160px; font-family:monospace; font-size:10.5px; }
+
+        /* Screenshot */
+        .ag-screenshot {
+            width:100%; border-radius:8px; border:1px solid #1e1e1e; cursor:zoom-in;
+            display:block; transition:border-color .2s; max-height:200px; object-fit:cover; object-position:top;
+        }
+        .ag-screenshot:hover { border-color:rgba(140,50,212,.5); }
+
+        /* Done / Error */
+        .ag-done-msg {
+            align-self:flex-start; font-size:12px; color:#66bb6a; padding:9px 14px;
+            background:rgba(76,175,80,0.07); border:1px solid rgba(76,175,80,0.18);
+            border-radius:12px; line-height:1.5; max-width:100%;
+        }
+        .ag-error-msg {
+            align-self:flex-start; font-size:12px; color:#ef9a9a; padding:9px 14px;
+            background:rgba(229,57,53,0.07); border:1px solid rgba(229,57,53,0.18);
+            border-radius:12px; line-height:1.5; max-width:100%; white-space:pre-wrap;
+        }
+
+        /* Input area */
+        #ag-input-area {
+            padding:10px 12px 12px; border-top:1px solid rgba(255,255,255,0.05); flex-shrink:0;
+        }
+        #ag-input-box {
+            display:flex; align-items:flex-end; gap:8px; background:#111;
+            border:1px solid #1e1e1e; border-radius:14px; padding:9px 8px 9px 14px;
+            transition:border-color .2s;
+        }
+        #ag-input-box:focus-within { border-color:rgba(140,50,212,.5); }
+        #ag-task {
+            flex:1; background:transparent; border:none; color:#ddd; font-size:12.5px;
+            line-height:1.5; resize:none; font-family:inherit; max-height:120px;
+            min-height:20px; overflow-y:auto; outline:none;
+        }
+        #ag-task::placeholder { color:#555; }
+        #ag-run-btn {
+            width:30px; height:30px; min-width:30px; background:#8c32d4; color:#fff; border:none;
+            border-radius:8px; cursor:pointer; display:flex; align-items:center;
+            justify-content:center; flex-shrink:0; transition:all .2s;
+        }
+        #ag-run-btn:hover:not(.ag-running) { background:#9d4be2; transform:scale(1.05); }
+        #ag-run-btn.ag-running { background:#222; border:1px solid #333; }
+        #ag-run-btn svg { width:14px; height:14px; }
+
+        /* ── Notepad panel ──────────────────────────────────────── */
+        #notepad-panel {
+            position:fixed; top:90px; right:0; width:360px; height:calc(100% - 90px);
+            background:#121212; border-left:1px solid rgba(255,255,255,0.08);
+            z-index:1500; display:flex; flex-direction:column;
+            transform:translateX(105%); transition:transform .26s cubic-bezier(.2,.8,.2,1);
+            overflow:hidden; font-family:'Inter',sans-serif;
+        }
+        #notepad-panel.np-visible { transform:translateX(0); }
+
+        /* header — identical rhythm to chrome-toolbar */
+        .np-header {
+            display:flex; align-items:center; height:48px; padding:0 8px 0 14px;
+            border-bottom:1px solid rgba(255,255,255,0.08); flex-shrink:0; gap:4px;
+        }
+        .np-header-title { font-size:12px; font-weight:600; color:#888; flex:1; letter-spacing:.04em; text-transform:uppercase; }
+        .np-icon-btn {
+            background:transparent; border:none; color:#666; cursor:pointer;
+            width:32px; height:32px; border-radius:8px;
+            display:flex; align-items:center; justify-content:center;
+            transition:background .15s,color .15s; flex-shrink:0;
+        }
+        .np-icon-btn:hover { background:rgba(255,255,255,0.06); color:#E5E5E5; }
+        .np-icon-btn svg { width:15px; height:15px; }
+
+        /* scope tabs — pill style matching browser tabs */
+        .np-scope-tabs {
+            display:flex; padding:8px 12px 6px; gap:4px; flex-shrink:0;
+            border-bottom:1px solid rgba(255,255,255,0.06);
+        }
+        .np-tab {
+            flex:1; padding:5px 10px; background:transparent;
+            border:1px solid transparent; border-radius:8px;
+            color:#555; font-size:12px; font-family:'Inter',sans-serif;
+            cursor:pointer; transition:all .15s; font-weight:500;
+        }
+        .np-tab.active {
+            background:#1F1F1F; border-color:rgba(255,255,255,0.1); color:#E5E5E5;
+        }
+        .np-tab:not(.active):hover { color:#C0C0C0; background:rgba(255,255,255,0.04); }
+
+        /* new note button */
+        .np-new-btn {
+            display:flex; align-items:center; gap:8px;
+            margin:8px 12px 6px; padding:7px 12px;
+            background:transparent; border:1px solid rgba(255,255,255,0.08);
+            border-radius:8px; color:#666; font-size:12px;
+            font-family:'Inter',sans-serif; cursor:pointer; transition:all .15s;
+        }
+        .np-new-btn:hover { border-color:rgba(157,124,206,0.4); color:#9d7cce; background:rgba(157,124,206,0.06); }
+
+        /* note list */
+        #np-list {
+            flex:1; overflow-y:auto; padding:4px 12px 12px;
+            scrollbar-width:thin; scrollbar-color:rgba(255,255,255,0.08) transparent;
+        }
+        .np-card {
+            padding:10px 12px; border-radius:8px;
+            background:#1F1F1F; border:1px solid rgba(255,255,255,0.07);
+            margin-bottom:4px; cursor:pointer; transition:background .15s,border-color .15s;
+        }
+        .np-card:hover { background:#282828; border-color:rgba(255,255,255,0.12); }
+        .np-card-title { font-size:13px; color:#C0C0C0; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .np-card-preview { font-size:11px; color:#555; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.5; }
+        .np-card-meta { font-size:10px; color:#444; margin-top:6px; display:flex; align-items:center; gap:6px; }
+        .np-vis-badge {
+            font-size:9px; padding:2px 6px; border-radius:4px;
+            background:rgba(255,255,255,0.05); color:#555;
+            border:1px solid rgba(255,255,255,0.07);
+        }
+        #np-empty { padding:40px 14px; text-align:center; color:#333; font-size:12px; line-height:1.6; }
+
+        /* ── editor ──────────────────────────────────────────────── */
+        #np-editor-view { display:flex; flex-direction:column; height:100%; overflow:hidden; }
+
+        .np-editor-header {
+            display:flex; align-items:center; height:42px; padding:0 8px;
+            border-bottom:1px solid rgba(255,255,255,0.08); gap:4px; flex-shrink:0;
+        }
+        .np-vis-select {
+            flex:1; background:#1F1F1F; border:1px solid rgba(255,255,255,0.1);
+            border-radius:8px; padding:5px 8px; color:#888; font-size:11px;
+            font-family:'Inter',sans-serif; cursor:pointer; outline:none;
+            transition:border-color .15s;
+        }
+        .np-vis-select:hover { border-color:rgba(255,255,255,0.15); }
+        .np-share-btn {
+            padding:5px 10px; background:transparent;
+            border:1px solid rgba(255,255,255,0.1); border-radius:8px;
+            color:#888; font-size:11px; font-family:'Inter',sans-serif;
+            cursor:pointer; transition:all .15s; white-space:nowrap;
+            display:flex; align-items:center;
+        }
+        .np-share-btn:hover { border-color:rgba(157,124,206,0.4); color:#9d7cce; background:rgba(157,124,206,0.06); }
+
+        #np-title-input {
+            padding:12px 14px 10px; background:transparent; border:none;
+            border-bottom:1px solid rgba(255,255,255,0.06);
+            color:#E5E5E5; font-size:15px; font-weight:600;
+            font-family:'Inter',sans-serif; outline:none; width:100%; flex-shrink:0;
+        }
+        #np-title-input::placeholder { color:#333; }
+        #np-title-input:focus { border-bottom-color:rgba(255,255,255,0.12); }
+
+        /* format toolbar — same rhythm as nav-btn */
+        .np-fmt-bar {
+            display:flex; align-items:center; padding:4px 8px; gap:1px;
+            border-bottom:1px solid rgba(255,255,255,0.06); flex-shrink:0; flex-wrap:wrap;
+        }
+        .np-fmt-btn {
+            width:30px; height:28px; background:transparent; border:none;
+            border-radius:6px; color:#555; cursor:pointer; font-size:12px;
+            font-family:'Inter',sans-serif; display:flex; align-items:center;
+            justify-content:center; transition:background .12s,color .12s; flex-shrink:0;
+        }
+        .np-fmt-btn:hover { background:rgba(255,255,255,0.06); color:#C0C0C0; }
+        .np-fmt-btn.fmt-active { background:rgba(157,124,206,0.15); color:#9d7cce; }
+        .np-fmt-sep { width:1px; height:14px; background:rgba(255,255,255,0.08); margin:0 2px; align-self:center; }
+
+        /* editor content area */
+        #np-editor {
+            flex:1; padding:14px 16px; overflow-y:auto; outline:none;
+            color:#C0C0C0; font-size:13px; line-height:1.8;
+            scrollbar-width:thin; scrollbar-color:rgba(255,255,255,0.08) transparent;
+            word-break:break-word;
+        }
+        #np-editor:empty:before { content:attr(placeholder); color:#2e2e2e; pointer-events:none; }
+        #np-editor h1 { font-size:19px; font-weight:700; color:#E5E5E5; margin:12px 0 6px; line-height:1.3; }
+        #np-editor h2 { font-size:15px; font-weight:600; color:#D8D8D8; margin:10px 0 4px; line-height:1.35; }
+        #np-editor h3 { font-size:13px; font-weight:600; color:#C8C8C8; margin:8px 0 3px; }
+        #np-editor p  { margin:3px 0; }
+        #np-editor ul, #np-editor ol { padding-left:20px; margin:4px 0; }
+        #np-editor li { margin:2px 0; }
+        #np-editor code {
+            background:rgba(255,255,255,0.07); border-radius:5px;
+            padding:1px 6px; font-family:monospace; font-size:12px; color:#C0C0C0;
+        }
+        #np-editor pre {
+            background:#1F1F1F; border:1px solid rgba(255,255,255,0.08);
+            border-radius:8px; padding:10px 12px; margin:8px 0; overflow-x:auto;
+        }
+        #np-editor pre code { background:transparent; padding:0; }
+        #np-editor .spoiler {
+            background:#2a2a2a; color:#2a2a2a; border-radius:4px;
+            padding:0 4px; cursor:pointer; transition:color .15s,background .15s; user-select:none;
+        }
+        #np-editor .spoiler:hover, #np-editor .spoiler.revealed { color:#C0C0C0; background:rgba(255,255,255,0.06); }
+        #np-editor blockquote {
+            border-left:2px solid rgba(255,255,255,0.15); margin:6px 0;
+            padding:4px 0 4px 12px; color:#666;
+        }
+        #np-editor a { color:#9d7cce; text-decoration:underline; }
+        #np-editor hr { border:none; border-top:1px solid rgba(255,255,255,0.08); margin:10px 0; }
+
+        /* ── Find bar ──────────────────────────────────────────── */
+        #find-bar {
+            position:fixed; bottom:0; left:0; right:0; height:44px;
+            background:#1F1F1F; border-top:1px solid rgba(255,255,255,0.08);
+            z-index:2600; display:none; align-items:center; padding:0 14px; gap:8px;
+        }
+        #find-bar.visible { display:flex; }
+        #find-bar-input {
+            flex:1; max-width:280px; background:#282828; border:1px solid rgba(255,255,255,0.1);
+            border-radius:8px; padding:6px 10px; color:#E5E5E5; font-size:13px;
+            font-family:'Inter',sans-serif; outline:none; transition:border-color .2s;
+        }
+        #find-bar-input:focus { border-color:rgba(157,124,206,0.45); }
+        #find-bar-count { font-size:12px; color:#666; min-width:70px; white-space:nowrap; }
+        .find-bar-btn {
+            width:28px; height:28px; border-radius:7px; background:transparent; border:none;
+            color:#888; cursor:pointer; display:flex; align-items:center; justify-content:center;
+            transition:background .15s,color .15s; flex-shrink:0;
+        }
+        .find-bar-btn:hover { background:rgba(255,255,255,0.06); color:#E5E5E5; }
+        .find-bar-btn svg { width:14px; height:14px; }
+
+        /* ── App loading overlay ─────────────────────────────────── */
+        #app-loading {
+            position: fixed; inset: 0; z-index: 999999;
+            background: #121212;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: 18px;
+            transition: opacity .4s ease;
+            pointer-events: all;
+        }
+        #app-loading.fade-out { opacity: 0; pointer-events: none; }
+        #app-loading.hidden   { display: none; }
+
+        .al-logo {
+            width: 96px; height: 96px;
+            border-radius: 16px;
+            overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .al-logo img { width: 96px; height: 96px; object-fit: contain; border-radius: 16px; }
+
+        .al-spinner {
+            width: 22px; height: 22px;
+            border: 2px solid rgba(140,50,212,.25);
+            border-top-color: #8c32d4;
+            border-radius: 50%;
+            animation: alSpin .8s linear infinite;
+        }
+        @keyframes alSpin { to { transform: rotate(360deg); } }
+
+        .al-status {
+            font-size: 11px; color: #444;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            letter-spacing: .02em;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen font-sans">
+
+    <!-- ══════════════════ LOADING OVERLAY ══════════════════════════ -->
+    <div id="app-loading">
+        <div class="al-logo">
+            <img src="logo.png" alt="DEFIS">
+        </div>
+        <div class="al-spinner"></div>
+        <div class="al-status" id="al-status">Завантаження…</div>
+    </div>
+
+    <!-- ══════════════════ BROWSER CHROME ══════════════════════════ -->
+    <div id="chrome">
+
+        <!-- Row 1: Tabs + drag area + Windows controls -->
+        <div id="chrome-titlebar">
+            <div id="chrome-tabs-wrapper">
+                <div id="tabs-container"></div>
+                <button id="new-tab-btn" title="Нова вкладка (Ctrl+T)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14m-7-7h14"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Drag area with profile name + prev/next arrows -->
+            <div id="title-drag-area">
+                <button class="prof-cycle-btn" id="prof-cycle-prev" title="Попередній акаунт (Ctrl+Shift+←)">&#8249;</button>
+                <span id="profile-label"></span>
+                <button class="prof-cycle-btn" id="prof-cycle-next" title="Наступний акаунт (Ctrl+Shift+→)">&#8250;</button>
+            </div>
+
+            <!-- Windows-style controls: minimize / maximize / close -->
+            <div id="chrome-wc">
+                <button class="wc-btn" id="btn-minimize" title="Згорнути">
+                    <svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12">
+                        <rect x="3" y="11" width="18" height="2" rx="1"/>
+                    </svg>
+                </button>
+                <button class="wc-btn" id="btn-maximize" title="Розгорнути">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+                        <rect x="3" y="3" width="18" height="18" rx="2"/>
+                    </svg>
+                </button>
+                <button class="wc-btn" id="btn-close" title="Закрити">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+                        <path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Row 2: Navigation + address bar + menus -->
+        <div id="chrome-toolbar">
+            <button class="nav-btn" id="btn-back"    disabled title="Назад (Alt+←)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 18l-6-6 6-6"/></svg>
+            </button>
+            <button class="nav-btn" id="btn-forward" disabled title="Вперед (Alt+→)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 18l6-6-6-6"/></svg>
+            </button>
+            <button class="nav-btn" id="btn-reload" title="Оновити (Ctrl+R)">
+                <svg id="reload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+            </button>
+
+            <div id="address-bar-wrapper">
+                <span id="lock-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                    </svg>
+                </span>
+                <input id="address-bar" type="text" placeholder="Пошук або введіть URL..." autocomplete="off" spellcheck="false">
+            </div>
+
+            <!-- Extensions (puzzle-piece) — shown only when profile has extensions -->
+            <div class="btn-wrap" id="ext-btn-wrap" style="display:none">
+                <button class="nav-btn" id="ext-btn" title="Розширення">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 3v1.5a1.5 1.5 0 003 0V3h6v4h1.5a1.5 1.5 0 010 3H18v5h-1.5a1.5 1.5 0 000 3H18v3h-6v-1.5a1.5 1.5 0 00-3 0V21H3v-6h1.5a1.5 1.5 0 000-3H3V6h6V3z"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Settings -->
+            <div class="btn-wrap">
+                <button class="nav-btn" id="settingsBtn" title="Налаштування">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Bookmarks -->
+            <div class="btn-wrap">
+                <button class="nav-btn" id="bookmarksBtn" title="Закладки">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- History -->
+            <div class="btn-wrap">
+                <button class="nav-btn" id="historyBtn" title="Історія (Ctrl+H)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Notepad -->
+            <button class="nav-btn" id="notepadBtn" title="Записник">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+            </button>
+
+            <!-- Claude.ai quick access -->
+            <button class="nav-btn" id="claudeBtn" title="Claude.ai (Ctrl+Shift+C)" style="color:#9d7cce">
+                <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" width="16" height="16">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15v-4H7l5-8v4h4l-5 8z"/>
+                </svg>
+            </button>
+
+            <!-- AI Agent -->
+            <button class="nav-btn" id="agentBtn" title="AI Агент">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                </svg>
+            </button>
+
+            <!-- Sync status -->
+            <div id="sync-status-wrap" style="display:flex;align-items:center;gap:5px;padding:0 6px;cursor:default;flex-shrink:0;" title="Статус сервера">
+                <span id="sync-dot" style="width:7px;height:7px;border-radius:50%;background:#444;flex-shrink:0;transition:background .4s;"></span>
+                <span id="sync-label" style="font-size:10px;color:#555;white-space:nowrap;"></span>
+            </div>
+
+            <!-- Profile -->
+            <div class="btn-wrap">
+                <button class="nav-btn" id="profileBtn" title="Акаунти (Ctrl+Shift+A)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div><!-- /chrome -->
+
+    <!-- ══════════════════ PAGE SCREENSHOT BG ══════════════════════ -->
+    <div id="page-sc-bg"></div>
+
+    <!-- ══════════════════ WEBGL BACKGROUND ════════════════════════ -->
+    <div id="webgl-container"></div>
+
+    <!-- ══════════════════ NEW TAB PAGE ════════════════════════════ -->
+    <div id="newtab-area">
+        <div class="w-full max-w-xl flex flex-col items-center gap-6">
+            <div class="text-center mb-4 animate-fade-in" style="animation-delay:.1s">
+                <h1 class="text-sm uppercase tracking-[0.5em] text-mercury font-bold animate-glow">Defis</h1>
+            </div>
+            <div class="w-full pointer-events-auto animate-fade-in" style="animation-delay:.2s">
+                <div class="search-container rounded-xl flex items-center px-4 py-2.5 transition-all duration-300">
+                    <svg class="w-4 h-4 text-slate mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                    <input id="newtab-search" type="text" placeholder="Search or type URL..."
+                        class="bg-transparent w-full outline-none text-mercury text-sm font-light placeholder-slate/50">
+                </div>
+            </div>
+        </div>
+        <div class="absolute bottom-10 left-1/2 -translate-x-1/2 animate-fade-in" style="animation-delay:.4s">
+            <span id="clock-display" class="text-[10px] uppercase tracking-widest text-slate/40">00:00</span>
+        </div>
+    </div>
+
+    <!-- ══════════════════ PROFILE MANAGER MODAL ═══════════════════ -->
+    <div id="profile-modal" class="modal hidden">
+        <div class="modal-backdrop" id="profile-modal-backdrop"></div>
+        <div class="modal-box" style="width:640px;padding:20px 20px 16px">
+
+            <div class="modal-header" style="margin-bottom:14px">
+                <span class="modal-title">Менеджер профілів</span>
+                <button class="modal-close" id="profile-modal-close">✕</button>
+            </div>
+
+            <!-- Main tabs: Profiles / Admin -->
+            <div class="pm-tabs" id="pm-tabs">
+                <button class="pm-tab active" data-pm-tab="profiles">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;margin-right:5px;vertical-align:-2px"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                    Профілі
+                </button>
+                <button class="pm-tab" data-pm-tab="admin" id="pm-tab-admin" style="display:none">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;margin-right:5px;vertical-align:-2px"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    Адмін
+                </button>
+            </div>
+
+            <!-- ── Tab: Profiles ─────────────────────────────────── -->
+            <div id="pm-pane-profiles">
+                <div style="display:flex;gap:8px;margin-bottom:10px">
+                    <input id="profile-search" type="text" placeholder="Пошук профілів…"
+                        style="flex:1;background:#1a1a1a;border:1px solid #333;border-radius:8px;
+                               padding:8px 12px;color:#e5e5e5;font-size:13px;outline:none;box-sizing:border-box;transition:border-color .2s"
+                        onfocus="this.style.borderColor='rgba(157,124,206,0.5)'"
+                        onblur="this.style.borderColor='#333'">
+                    <button id="pm-filter-proxy" title="Фільтр по proxy"
+                        style="background:#1a1a1a;border:1px solid #333;border-radius:8px;padding:8px 12px;color:#666;font-size:12px;cursor:pointer;white-space:nowrap;transition:all .15s"
+                        onclick="window._pmToggleProxyFilter && window._pmToggleProxyFilter(this)">Proxy</button>
+                </div>
+                <div id="profile-pagination" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;font-size:12px;color:#666">
+                    <button id="prof-prev" style="background:#1a1a1a;border:1px solid #333;border-radius:6px;color:#aaa;cursor:pointer;padding:3px 10px;font-size:14px">‹</button>
+                    <span id="prof-page-info"></span>
+                    <button id="prof-next" style="background:#1a1a1a;border:1px solid #333;border-radius:6px;color:#aaa;cursor:pointer;padding:3px 10px;font-size:14px">›</button>
+                </div>
+                <div id="profiles-list" style="max-height:340px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.08) transparent"></div>
+                <button class="btn-primary" id="add-profile-btn" style="width:100%;margin-top:12px">+ Новий профіль</button>
+                <button id="adsp-quick-import-btn" style="display:none;width:100%;margin-top:6px;background:linear-gradient(135deg,#5a2d9c,#8c32d4);border:none;border-radius:8px;padding:9px 16px;color:#fff;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .15s;letter-spacing:.02em"
+                    onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
+                    ⚡ Імпорт з AdsPower
+                </button>
+            </div>
+
+            <!-- ── Tab: Admin ────────────────────────────────────── -->
+            <div id="pm-pane-admin" style="display:none">
+
+                <!-- Admin sub-tabs -->
+                <div class="adm-tabs">
+                    <button class="adm-tab active" data-adm-tab="users">Користувачі</button>
+                    <button class="adm-tab" data-adm-tab="adspower">AdsPower</button>
+                    <button class="adm-tab" data-adm-tab="logs">Логи</button>
+                </div>
+
+                <!-- Sub-pane: Users -->
+                <div id="adm-pane-users">
+                    <div id="adm-users-list" style="max-height:220px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.08) transparent">
+                        <div style="color:#555;font-size:12px;padding:20px 0;text-align:center">Завантаження…</div>
+                    </div>
+
+                    <!-- Create user form -->
+                    <div class="adm-form">
+                        <div class="adm-form-title">Новий користувач</div>
+                        <div class="adm-form-row" style="margin-bottom:8px">
+                            <div>
+                                <label class="form-label">Email</label>
+                                <input class="form-input" id="adm-new-email" placeholder="user@example.com">
+                            </div>
+                            <div>
+                                <label class="form-label">Пароль</label>
+                                <input class="form-input" type="password" id="adm-new-pass" placeholder="••••••••">
+                            </div>
+                        </div>
+                        <div class="adm-form-row" style="margin-bottom:12px">
+                            <div>
+                                <label class="form-label">Ім'я</label>
+                                <input class="form-input" id="adm-new-name" placeholder="Ім'я">
+                            </div>
+                            <div>
+                                <label class="form-label">Роль</label>
+                                <select class="form-select" id="adm-new-role">
+                                    <option value="user">user</option>
+                                    <option value="manager">manager</option>
+                                    <option value="admin">admin</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button class="btn-primary" id="adm-create-user-btn" style="width:100%">Створити користувача</button>
+                    </div>
+                </div>
+
+                <!-- Sub-pane: AdsPower -->
+                <div id="adm-pane-adspower" style="display:none">
+
+                    <!-- Connection status -->
+                    <div class="adsp-status-box" id="adsp-status-box">
+                        <div class="adsp-dot" id="adsp-dot"></div>
+                        <div style="flex:1">
+                            <div class="adsp-status-text" id="adsp-status-text">AdsPower API: перевірка…</div>
+                            <div class="adsp-status-sub" id="adsp-status-sub">localhost:50325</div>
+                        </div>
+                        <button class="btn-ghost" id="adsp-test-btn" style="font-size:12px;padding:6px 14px">Перевірити</button>
+                    </div>
+
+                    <!-- Load profiles button -->
+                    <div style="display:flex;gap:8px;margin-bottom:10px">
+                        <button class="btn-primary" id="adsp-load-btn" style="font-size:12px;padding:7px 16px" disabled>
+                            Завантажити профілі
+                        </button>
+                        <label class="form-check" style="margin:0;flex:1;justify-content:flex-end">
+                            <input type="checkbox" id="adsp-import-cookies" checked>
+                            <span style="font-size:12px">Імпортувати cookies</span>
+                        </label>
+                    </div>
+
+                    <!-- Profile list -->
+                    <div id="adsp-profile-wrap" style="display:none">
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+                            <label class="form-check" style="margin:0">
+                                <input type="checkbox" id="adsp-select-all">
+                                <span style="font-size:12px;color:#888">Обрати всі</span>
+                            </label>
+                            <span id="adsp-selected-count" style="font-size:11px;color:#555"></span>
+                        </div>
+                        <div id="adsp-profiles-table" style="max-height:200px;overflow-y:auto;border:1px solid rgba(255,255,255,0.07);border-radius:8px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.08) transparent">
+                            <!-- rows injected by JS -->
+                        </div>
+                        <button class="btn-primary" id="adsp-import-btn" style="width:100%;margin-top:10px;font-size:12px" disabled>
+                            Імпортувати обрані
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Sub-pane: Logs -->
+                <div id="adm-pane-logs" style="display:none">
+                    <div id="adm-logs-list" style="max-height:340px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.08) transparent;font-size:11px;font-family:monospace">
+                        <div style="color:#555;padding:20px 0;text-align:center">Завантаження…</div>
+                    </div>
+                </div>
+
+            </div><!-- /pm-pane-admin -->
+        </div>
+    </div>
+
+    <!-- ══════════════════ IMPORT PROGRESS MODAL ════════════════════ -->
+    <div id="import-progress-modal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-box" style="width:500px">
+            <div class="modal-header">
+                <span class="modal-title">Імпорт з AdsPower</span>
+            </div>
+            <div class="import-progress-bar"><div class="import-progress-fill" id="import-fill"></div></div>
+            <div id="import-status-text" style="font-size:12px;color:#888;margin-bottom:8px">Підготовка…</div>
+            <div class="import-log" id="import-log"></div>
+            <div class="modal-footer" id="import-footer" style="display:none">
+                <button class="btn-primary" id="import-done-btn">Готово</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════ ASSIGN PROFILES MODAL ═══════════════════ -->
+    <div id="assign-modal" class="modal hidden">
+        <div class="modal-backdrop" id="assign-modal-backdrop"></div>
+        <div class="modal-box" style="width:480px">
+            <div class="modal-header">
+                <span class="modal-title" id="assign-modal-title">Призначити профілі</span>
+                <button class="modal-close" id="assign-modal-close">✕</button>
+            </div>
+            <div style="font-size:12px;color:#666;margin-bottom:12px" id="assign-user-email"></div>
+            <div id="assign-profiles-list" style="max-height:320px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.08) transparent"></div>
+            <div class="modal-footer">
+                <button class="btn-ghost" id="assign-cancel-btn">Скасувати</button>
+                <button class="btn-primary" id="assign-save-btn">Зберегти</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════ PROFILE EDIT MODAL ══════════════════════ -->
+    <div id="profile-edit-modal" class="modal hidden">
+        <div class="modal-backdrop" id="edit-modal-backdrop"></div>
+        <div class="modal-box">
+            <div class="modal-header">
+                <span class="modal-title" id="edit-modal-title">Редагувати профіль</span>
+                <button class="modal-close" id="edit-modal-close">✕</button>
+            </div>
+
+            <input type="hidden" id="edit-profile-id">
+
+            <label class="form-label">Назва профілю</label>
+            <input class="form-input" id="edit-name" placeholder="Наприклад: Робочий">
+
+            <label class="form-label">Колір</label>
+            <div style="display:flex;align-items:center;gap:10px">
+                <input type="color" id="edit-color" style="width:38px;height:38px;border:none;background:none;cursor:pointer;border-radius:6px;padding:2px">
+                <span id="edit-color-preview" style="width:26px;height:26px;border-radius:50%;display:inline-block;background:#9d7cce"></span>
+            </div>
+
+            <div class="menu-divider" style="margin:18px 0 12px"></div>
+            <div class="modal-title" style="font-size:13px;margin-bottom:4px">Проксі</div>
+
+            <label class="form-check" style="margin-top:10px">
+                <input type="checkbox" id="proxy-enabled">
+                <span>Увімкнути проксі</span>
+            </label>
+
+            <div id="proxy-fields" style="display:none;margin-top:10px">
+                <label class="form-label">Протокол</label>
+                <select class="form-select" id="proxy-proto">
+                    <option value="http">HTTP</option>
+                    <option value="socks5">SOCKS5</option>
+                </select>
+
+                <div class="form-row" style="margin-top:10px">
+                    <div>
+                        <label class="form-label">Хост</label>
+                        <input class="form-input" id="proxy-host" placeholder="127.0.0.1">
+                    </div>
+                    <div>
+                        <label class="form-label">Порт</label>
+                        <input class="form-input" id="proxy-port" placeholder="8080">
+                    </div>
+                </div>
+
+                <div class="form-row" style="margin-top:10px">
+                    <div>
+                        <label class="form-label">Логін (необов'язково)</label>
+                        <input class="form-input" id="proxy-user" placeholder="username">
+                    </div>
+                    <div>
+                        <label class="form-label">Пароль (необов'язково)</label>
+                        <input class="form-input" type="password" id="proxy-pass" placeholder="••••••">
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn-danger" id="edit-delete-btn">Видалити профіль</button>
+                <button class="btn-ghost"  id="edit-cancel-btn">Скасувати</button>
+                <button class="btn-primary" id="edit-save-btn">Зберегти</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════ SCREENSHOT LIGHTBOX ════════════════════ -->
+    <div id="sc-lightbox">
+        <img id="sc-lightbox-img" src="" alt="screenshot">
+        <button id="sc-lightbox-close">✕</button>
+        <div id="sc-lightbox-hint">Клік або Escape — закрити · Колесо миші — масштаб</div>
+    </div>
+
+    <!-- ══════════════════ TOAST / DOWNLOAD BAR ════════════════════ -->
+    <div id="toast-container"></div>
+
+    <!-- Chrome Web Store install banner (appears when on a CWS extension page) -->
+    <div id="cws-banner">
+        <svg class="cws-puzzle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 3v1.5a1.5 1.5 0 003 0V3h6v4h1.5a1.5 1.5 0 010 3H18v5h-1.5a1.5 1.5 0 000 3H18v3h-6v-1.5a1.5 1.5 0 00-3 0V21H3v-6h1.5a1.5 1.5 0 000-3H3V6h6V3z"/>
+        </svg>
+        <div class="cws-info">
+            <div class="cws-label">Chrome Розширення</div>
+            <div class="cws-name" id="cws-ext-name">—</div>
+        </div>
+        <button class="cws-install-btn" id="cws-install-btn">Встановити</button>
+        <button class="cws-close" id="cws-banner-close">✕</button>
+    </div>
+
+    <div id="download-bar">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="16" height="16" style="flex-shrink:0;color:#9d7cce">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+        </svg>
+        <span class="dl-name" id="dl-filename">—</span>
+        <span class="dl-progress" id="dl-progress"></span>
+        <button class="dl-close" id="dl-close">✕</button>
+    </div>
+
+    <!-- ══════════════════ UPDATE BANNER ═══════════════════════════ -->
+    <div id="update-banner">
+        <div class="upd-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+            </svg>
+        </div>
+        <div class="upd-body">
+            <div class="upd-title" id="upd-title">Доступне оновлення!</div>
+            <div class="upd-desc"  id="upd-desc">Нова версія DEFIS Browser готова до завантаження</div>
+        </div>
+        <button class="upd-btn" id="upd-download-btn">Завантажити</button>
+        <button class="upd-close" id="upd-close-btn">✕</button>
+    </div>
+
+    <!-- ══════════════════ NOTEPAD PANEL ══════════════════════════ -->
+    <div id="notepad-panel">
+
+        <!-- ── List view ──────────────────────────────────────── -->
+        <div id="np-list-view" style="display:flex;flex-direction:column;height:100%;overflow:hidden;">
+            <div class="np-header">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px;color:#666;flex-shrink:0">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+                <span class="np-header-title">Записник</span>
+                <button class="np-icon-btn" id="np-close-btn" title="Закрити">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <div class="np-scope-tabs">
+                <button class="np-tab active" data-scope="profile">Профіль</button>
+                <button class="np-tab" data-scope="global">Загальні</button>
+            </div>
+
+            <button class="np-new-btn" id="np-new-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:13px;height:13px;flex-shrink:0">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14m-7-7h14"/>
+                </svg>
+                Нова нотатка
+            </button>
+
+            <div id="np-list"></div>
+            <div id="np-empty" style="display:none">Немає нотаток</div>
+        </div>
+
+        <!-- ── Editor view ────────────────────────────────────── -->
+        <div id="np-editor-view" style="display:none;flex-direction:column;height:100%;overflow:hidden;">
+            <div class="np-editor-header">
+                <button class="np-icon-btn" id="np-back-btn" title="До списку">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 18l-6-6 6-6"/></svg>
+                </button>
+                <select class="np-vis-select" id="np-vis-select">
+                    <option value="private">Приватна</option>
+                    <option value="team">Команда</option>
+                    <option value="public">Публічна</option>
+                </select>
+                <button class="np-share-btn" id="np-share-btn" title="Поділитись посиланням">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:5px;flex-shrink:0"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path stroke-linecap="round" d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"/></svg>
+                    Поділитись
+                </button>
+                <button class="np-icon-btn" id="np-delete-btn" title="Видалити нотатку" style="color:#e06c75">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                </button>
+            </div>
+
+            <input type="text" id="np-title-input" placeholder="Назва нотатки…">
+
+            <div class="np-fmt-bar">
+                <button class="np-fmt-btn" data-cmd="bold"            title="Жирний"><b>B</b></button>
+                <button class="np-fmt-btn" data-cmd="italic"          title="Курсив"><i>I</i></button>
+                <button class="np-fmt-btn" data-cmd="underline"       title="Підкреслений"><u>U</u></button>
+                <button class="np-fmt-btn" data-cmd="strikeThrough"   title="Закреслений"><s>S</s></button>
+                <div class="np-fmt-sep"></div>
+                <button class="np-fmt-btn" data-cmd="h1"  title="Заголовок 1" style="font-size:11px;font-weight:700">H1</button>
+                <button class="np-fmt-btn" data-cmd="h2"  title="Заголовок 2" style="font-size:11px;font-weight:600">H2</button>
+                <button class="np-fmt-btn" data-cmd="h3"  title="Заголовок 3" style="font-size:10px;font-weight:600">H3</button>
+                <button class="np-fmt-btn" data-cmd="p"   title="Абзац" style="font-size:11px">¶</button>
+                <div class="np-fmt-sep"></div>
+                <button class="np-fmt-btn" data-cmd="insertUnorderedList" title="Маркований список" style="font-size:14px">•</button>
+                <button class="np-fmt-btn" data-cmd="insertOrderedList"   title="Нумерований список" style="font-size:10px">1.</button>
+                <button class="np-fmt-btn" data-cmd="blockquote" title="Цитата" style="font-size:13px">"</button>
+                <div class="np-fmt-sep"></div>
+                <button class="np-fmt-btn" data-cmd="code"    title="Код"     style="font-size:11px">&lt;/&gt;</button>
+                <button class="np-fmt-btn" data-cmd="spoiler" title="Спойлер" style="font-size:10px;letter-spacing:-1px">||</button>
+            </div>
+
+            <div id="np-editor" contenteditable="true" placeholder="Почніть писати…"></div>
+        </div>
+    </div>
+
+    <!-- ══════════════════ AGENT PANEL ═══════════════════════════ -->
+    <div id="agent-panel">
+
+        <!-- Header -->
+        <div class="ag-header">
+            <span class="ag-header-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                </svg>
+            </span>
+            <span class="ag-header-title">AI Агент</span>
+            <span class="ag-header-model" id="ag-model-label">—</span>
+            <button class="ag-icon-btn" id="ag-close-btn" title="Закрити">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        <!-- Running status bar -->
+        <div id="ag-status-bar">
+            <span class="ag-pulse"></span>
+            <span id="ag-status-text">Виконується…</span>
+        </div>
+
+        <!-- Chat log -->
+        <div id="ag-log">
+            <div id="ag-empty">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z"/>
+                </svg>
+                <p>Опишіть задачу і натисніть<br>кнопку запуску</p>
+            </div>
+        </div>
+
+        <!-- Input -->
+        <div id="ag-input-area">
+            <div id="ag-input-box">
+                <textarea id="ag-task" rows="1" placeholder="Опишіть задачу для агента…"></textarea>
+                <button id="ag-run-btn" title="Запустити (Enter)">
+                    <!-- Send icon (default) -->
+                    <svg id="ag-btn-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/>
+                    </svg>
+                    <!-- Stop icon (when running) -->
+                    <svg id="ag-btn-stop" viewBox="0 0 24 24" fill="currentColor" style="display:none">
+                        <rect x="6" y="6" width="12" height="12" rx="2"/>
+                    </svg>
+                </button>
+            </div>
+            <div style="font-size:10px;color:#2a2a2a;margin-top:6px;text-align:center">Enter — надіслати · Shift+Enter — новий рядок</div>
+        </div>
+
+    </div>
+
+    <!-- ══════════════════ FIND BAR ═══════════════════════════════ -->
+    <div id="find-bar">
+        <input type="text" id="find-bar-input" placeholder="Знайти на сторінці…" autocomplete="off" spellcheck="false">
+        <span id="find-bar-count"></span>
+        <button class="find-bar-btn" id="find-bar-prev" title="Попередній (Shift+Enter)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <button class="find-bar-btn" id="find-bar-next" title="Наступний (Enter)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 18l6-6-6-6"/></svg>
+        </button>
+        <button class="find-bar-btn" id="find-bar-close" title="Закрити (Escape)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+    </div>
+
+    <!-- ══════════════════ SCRIPTS ══════════════════════════════════ -->
+    <!-- Renderer: browser chrome logic (regular script, runs sync) -->
+    <script src="renderer.js"></script>
+
+    <!-- THREE.js: 3D background (module, runs deferred) -->
+    <script type="module">
+        import * as THREE from 'three';
+        // IIFE needed: top-level `return` is a SyntaxError in ES modules (V8 parse-time error)
+        (() => {
+            const W = () => window.innerWidth, H = () => window.innerHeight - 90;
+            const container = document.getElementById('webgl-container');
+            if (!container) return;
+
+            const scene    = new THREE.Scene();
+            const camera   = new THREE.PerspectiveCamera(75, W()/H(), 0.1, 1000);
+            camera.position.z = 10;
+
+            const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
+            renderer.setSize(W(), H());
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+
+            const geos = [
+                new THREE.IcosahedronGeometry(1,0), new THREE.BoxGeometry(1.2,1.2,1.2),
+                new THREE.TorusGeometry(0.8,0.2,16,32), new THREE.OctahedronGeometry(1,0)
+            ];
+            const mat = new THREE.MeshBasicMaterial({ color:0x9d7cce, wireframe:true, transparent:true, opacity:0.15 });
+            const shapes = Array.from({ length:12 }, (_, i) => {
+                const m = new THREE.Mesh(geos[i % 4], mat);
+                m.position.set((Math.random()-.5)*20, (Math.random()-.5)*20, (Math.random()-.5)*10);
+                m.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
+                m.userData = { sx:(Math.random()-.5)*.005, sy:(Math.random()-.5)*.005, rx:Math.random()*.002, ry:Math.random()*.002 };
+                scene.add(m); return m;
+            });
+
+            (function frame() {
+                requestAnimationFrame(frame);
+                shapes.forEach(s => {
+                    s.position.x += s.userData.sx; s.position.y += s.userData.sy;
+                    s.rotation.x += s.userData.rx; s.rotation.y += s.userData.ry;
+                    if (Math.abs(s.position.x) > 12) s.userData.sx *= -1;
+                    if (Math.abs(s.position.y) > 12) s.userData.sy *= -1;
+                });
+                renderer.render(scene, camera);
+            })();
+
+            window.addEventListener('resize', () => {
+                camera.aspect = W()/H(); camera.updateProjectionMatrix();
+                renderer.setSize(W(), H());
+            });
+        })();
+    </script>
+</body>
+</html>

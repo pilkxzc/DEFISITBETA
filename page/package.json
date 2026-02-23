@@ -1,0 +1,114 @@
+{
+  "name": "defis-browser",
+  "productName": "DEFIS Browser",
+  "version": "1.0.9",
+  "description": "DEFIS Minimalist Browser",
+  "main": "main.js",
+  "author": {
+    "name": "DEFIS",
+    "email": "support@defis.app"
+  },
+  "homepage": "https://defis.app",
+  "scripts": {
+    "start": "electron .",
+    "build:linux": "electron-builder --linux AppImage",
+    "build:arch": "electron-builder --linux pacman",
+    "build:win": "LANG=en_US.UTF-8 electron-builder --win nsis",
+    "build:win:zip": "electron-builder --win zip",
+    "build:mac": "electron-builder --mac dmg",
+    "build:all": "electron-builder --linux AppImage --win nsis"
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.10"
+  },
+  "devDependencies": {
+    "electron": "^28.3.3",
+    "electron-builder": "^26.8.1"
+  },
+  "build": {
+    "appId": "com.defis.browser",
+    "productName": "DEFIS Browser",
+    "copyright": "Copyright © 2024 DEFIS",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*",
+      "!defis-server/**",
+      "!dist/**",
+      "!node_modules/.bin/**",
+      "!*.sh",
+      "!*.md",
+      "!server-config.json"
+    ],
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "pacman",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "category": "Network",
+      "description": "DEFIS Minimalist Browser",
+      "executableArgs": [
+        "--no-sandbox",
+        "--disable-gpu-sandbox"
+      ]
+    },
+    "pacman": {
+      "depends": [
+        "gtk3",
+        "libnotify",
+        "nss",
+        "libxss",
+        "libxtst",
+        "xdg-utils",
+        "at-spi2-core",
+        "util-linux-libs"
+      ]
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "DEFIS Browser"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "category": "public.app-category.utilities"
+    },
+    "dmg": {
+      "title": "DEFIS Browser"
+    }
+  }
+}
