@@ -1,0 +1,16 @@
+{
+  "name": "defisit-beta",
+  "version": "1.0.0",
+  "description": "DEFIS Browser - Antidetect Solution (Beta)",
+  "scripts": {
+    "install:all": "npm install --prefix page && npm install --prefix page/defis-server",
+    "start:client": "npm start --prefix page",
+    "start:server": "npm start --prefix page/defis-server",
+    "dev:server": "npm run dev --prefix page/defis-server",
+    "build:linux": "npm run build:linux --prefix page",
+    "build:win": "npm run build:win --prefix page",
+    "clean": "rm -rf node_modules page/node_modules page/defis-server/node_modules"
+  },
+  "author": "DEFIS",
+  "license": "MIT"
+}
